@@ -46,3 +46,5 @@ next-env.d.ts
 # design exploration renders (large; kept locally)
 /.impeccable/mocks/
 /.impeccable/questions/
+
+.vercel
