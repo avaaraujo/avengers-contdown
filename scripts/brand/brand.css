@@ -1,0 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Bangers&display=swap');
+:root { --wall:#121318; --paper:#f2eadb; --red:#e2231a; --yellow:#f2c200; --ink:#111; --blue:#1d5fb4; }
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--wall); font-family: 'Archivo', sans-serif; color: var(--paper); overflow: hidden; }
+.bangers { font-family: 'Bangers', sans-serif; letter-spacing: .02em; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }

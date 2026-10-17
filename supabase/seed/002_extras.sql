@@ -1,0 +1,15 @@
+-- Extras: a short list of Disney+ series and Fox X-Men films worth watching around the marathon. They stay out of the countdown math.
+-- Series carry their size in `note` (no runtime); streaming for these comes from TMDB when TMDB_API_KEY is set.
+insert into public.avengers_titles (slug, kind, chrono_order, title_pt, title_en, release_year, runtime_min, director, synopsis_pt, note) values
+('wandavision', 'series', 1, 'WandaVision', 'WandaVision', 2021, null, 'Jac Schaeffer', 'Wanda e Visão levam uma vida perfeita de sitcom nos subúrbios, até a realidade começar a rachar. Prepara o terreno para Doutor Estranho no Multiverso da Loucura.', '9 episódios'),
+('falcon-and-the-winter-soldier', 'series', 2, 'Falcão e o Soldado Invernal', 'The Falcon and the Winter Soldier', 2021, null, 'Kari Skogland', 'Sam Wilson e Bucky Barnes decidem o que fazer com o legado do Capitão América. Explica como Sam chega a Capitão América: Admirável Mundo Novo.', '6 episódios'),
+('loki', 'series', 3, 'Loki', 'Loki', 2021, null, 'Michael Waldron', 'Preso pela Autoridade de Variância Temporal, Loki descobre a linha do tempo sagrada e o primeiro pingo do multiverso.', '2 temporadas · 12 episódios'),
+('what-if', 'series', 4, 'What If...?', 'What If...?', 2021, null, 'A.C. Bradley', 'Animação que pergunta o que aconteceria se momentos-chave do MCU tivessem acabado de outro jeito. Um passeio pelas realidades alternativas.', 'Animação · 3 temporadas'),
+('x-men-97', 'series', 5, 'X-Men ''97', 'X-Men ''97', 2024, null, 'Beau DeMayo', 'Continuação da animação clássica dos anos 90: os mutantes seguem sem Charles Xavier e enfrentam o preconceito do mundo que juraram proteger.', 'Animação · 10 episódios na 1ª temporada'),
+('x-men', 'xmen', 1, 'X-Men: O Filme', 'X-Men', 2000, 104, 'Bryan Singer', 'Mutantes são temidos pelo mundo. Charles Xavier acolhe os jovens em sua escola enquanto Magneto prepara um plano contra a humanidade.', null),
+('x2', 'xmen', 2, 'X-Men 2', 'X2: X-Men United', 2003, 134, 'Bryan Singer', 'Depois de um atentado ao presidente, um coronel declara guerra aos mutantes e X-Men e Irmandade precisam se aliar.', null),
+('x-men-first-class', 'xmen', 3, 'X-Men: Primeira Classe', 'X-Men: First Class', 2011, 132, 'Matthew Vaughn', 'Nos anos 60, o jovem Charles Xavier e Erik Lehnsherr formam a primeira equipe de mutantes e viram inimigos.', null),
+('x-men-days-of-future-past', 'xmen', 4, 'X-Men: Dias de um Futuro Esquecido', 'X-Men: Days of Future Past', 2014, 132, 'Bryan Singer', 'Wolverine volta ao passado para impedir um futuro em que os mutantes são caçados e quase extintos.', null),
+('deadpool', 'xmen', 5, 'Deadpool', 'Deadpool', 2016, 108, 'Tim Miller', 'Wade Wilson vira o mercenário tagarela Deadpool depois de um experimento que o deixa imortal e desfigurado.', null),
+('logan', 'xmen', 6, 'Logan', 'Logan', 2017, 137, 'James Mangold', 'Num futuro sem mutantes, um Wolverine cansado cuida de um Professor X doente e protege uma menina com poderes parecidos.', null),
+('deadpool-2', 'xmen', 7, 'Deadpool 2', 'Deadpool 2', 2018, 119, 'David Leitch', 'Deadpool monta a X-Force para proteger um garoto mutante do implacável Cable.', null);

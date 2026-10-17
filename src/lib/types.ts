@@ -25,6 +25,26 @@ export type Film = {
   offers: Offer[];
 };
 
+/**
+ * A side-quest outside the countdown math: a Disney+ series or an X-Men film.
+ * `key` is its slot in the viewer's watched set (100+ series, 200+ X-Men), clear of the film numbers.
+ */
+export type Extra = {
+  id: number;
+  key: number;
+  kind: 'series' | 'xmen';
+  slug: string;
+  title: string;
+  en: string;
+  year: number;
+  /** minutes; null for series, which show `note` (seasons and episodes) instead */
+  runtime: number | null;
+  director: string | null;
+  synopsis: string;
+  note: string | null;
+  offers: Offer[];
+};
+
 export type Finale = {
   id: number;
   n: number;
@@ -41,5 +61,8 @@ export type Finale = {
 export type Catalog = {
   films: Film[];
   finale: Finale;
+  extras: Extra[];
+  /** true when streaming and PT-BR texts came from TMDB (key configured) */
+  tmdb: boolean;
   offersCheckedAt: string | null;
 };

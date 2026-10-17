@@ -12,8 +12,8 @@ function titleLines(title: string): [string, string] {
   return i > 0 ? [title.slice(0, i + 1), title.slice(i + 1).trim()] : [title, ''];
 }
 
-function Offers({ offers }: { offers: Offer[] }) {
-  if (!offers.length) return <p className="none">Este filme não está em nenhum streaming no Brasil agora.</p>;
+export function Offers({ offers, empty = 'Este filme não está em nenhum streaming no Brasil agora.' }: { offers: Offer[]; empty?: string }) {
+  if (!offers.length) return <p className="none">{empty}</p>;
   let k = 0;
   return (
     <>
@@ -48,13 +48,16 @@ type Props = {
 /** The detail screen: one full comic-book page for the issue. */
 export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onToggle, onClose, onGo }: Props) {
   const c = now === null ? null : countdownParts(finale.premiereAt, now);
+  const released = now !== null && now >= finale.premiereAt;
+  const sinceDays = released ? Math.floor((now - finale.premiereAt) / 864e5) : 0;
+  const seenCount = films.filter(f => watched.has(f.n)).length;
   const top = (
     <div className="cp-top panel">
       <button className="back" onClick={onClose} data-autofocus>
         <BackArrow /><span>Voltar para a estante</span>
       </button>
       <div className="mast lettering" aria-hidden="true"><span className="a">Avengers</span><span className="b">Countdown</span></div>
-      <div className="burst days-burst lettering"><Burst points={13} inner={0.62} seed={3} /><span>{c ? `${c.d} dias!` : '…'}</span></div>
+      <div className="burst days-burst lettering"><Burst points={13} inner={0.62} seed={3} /><span>{released ? 'Estreou!' : c ? `${c.d} dias!` : '…'}</span></div>
     </div>
   );
 
@@ -73,17 +76,20 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
           </div>
         </div>
         <div className="cp-col">
-          <div className="caption panel"><span className="phase">A estreia</span><p>{finale.synopsis} Até lá, termine a maratona.</p></div>
+          <div className="caption panel"><span className="phase">A estreia</span><p>{finale.synopsis} {released ? 'Já está em cartaz nos cinemas.' : 'Até lá, termine a maratona.'}</p></div>
           <div className="ficha panel">
             <div className="tag"><div className="burst lettering"><Burst seed={7} /><span>Ficha<br />técnica</span></div></div>
             <dl>
               <div><dt>Estreia</dt><dd className="red">17 de dezembro de 2026</dd></div>
               <div><dt>Gibi na estante</dt><dd>{finale.comic}</dd></div>
-              <div><dt>Maratona</dt><dd>{watched.size} de {films.length} filmes vistos</dd></div>
+              <div><dt>Maratona</dt><dd>{seenCount} de {films.length} filmes vistos</dd></div>
             </dl>
           </div>
           <div className="action panel halftone-red" style={{ gridTemplateColumns: '1fr' }}>
-            <div className="finale-count">{c ? `${c.d} dias` : '…'}<small>{c ? `${pad(c.h)}h ${pad(c.m)}min até a estreia` : ''}</small></div>
+            <div className="finale-count">
+              {released ? 'Em cartaz' : c ? `${c.d} dias` : '…'}
+              <small>{released ? (sinceDays ? `estreou há ${sinceDays} ${sinceDays === 1 ? 'dia' : 'dias'}` : 'estreou hoje') : c ? `${pad(c.h)}h ${pad(c.m)}min até a estreia` : ''}</small>
+            </div>
           </div>
         </div>
         <nav className="cp-nav" aria-label="Edições">

@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "thumbs": "node scripts/make-thumbs.mjs",
+    "brand": "node scripts/brand.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -23,6 +26,14 @@
     "@types/three": "^0.186.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
+    "playwright-core": "^1.64.1",
     "typescript": "^5"
-  }
+  },
+  "description": "Uma estante de gibis em 3D para maratonar o MCU em ordem cronológica até a estreia de Vingadores: Doutor Destino.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avaaraujo/avengers-contdown.git"
+  },
+  "homepage": "https://mcu.avaaraujo.com"
 }

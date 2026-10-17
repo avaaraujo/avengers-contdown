@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
-import type { Film } from '@/lib/types';
 
 const LOCAL_KEY = 'ac-watched';
 export type SessionUser = { id: string; email: string | null };
@@ -18,13 +17,13 @@ function writeLocal(s: Set<number>) {
  * Which films the viewer has watched. Guests keep it in this browser; once signed in it lives
  * in avengers_watches (RLS: own rows only), and anything marked as a guest is merged in.
  */
-export function useProgress(films: Film[]) {
+export function useProgress(items: { id: number; n: number }[]) {
   const [watched, setWatched] = useState<Set<number>>(() => new Set());
   const [user, setUser] = useState<SessionUser | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const idByN = useMemo(() => new Map(films.map(f => [f.n, f.id])), [films]);
-  const nById = useMemo(() => new Map(films.map(f => [f.id, f.n])), [films]);
+  const idByN = useMemo(() => new Map(items.map(f => [f.n, f.id])), [items]);
+  const nById = useMemo(() => new Map(items.map(f => [f.id, f.n])), [items]);
 
   useEffect(() => {
     const sb = supabaseBrowser();
@@ -36,7 +35,7 @@ export function useProgress(films: Film[]) {
       const u = session?.user;
       setUser(prev => (prev?.id === u?.id ? prev : u ? { id: u.id, email: u.email ?? null } : null));
       setAuthReady(true);
-      if (event === 'SIGNED_IN' && location.search.includes('code=')) history.replaceState(null, '', location.pathname);
+      if (event === 'SIGNED_IN' && location.search.includes('code=')) history.replaceState(history.state, '', location.pathname);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -88,7 +87,7 @@ export function useProgress(films: Film[]) {
   }, [user]);
 
   const signIn = useCallback(async (email: string) => {
-    const { error } = await supabaseBrowser().auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+    const { error } = await supabaseBrowser().auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + '/' } });
     return error ? (error.status === 429 ? 'Muitos pedidos seguidos. Espere alguns minutos e tente de novo.' : 'Não deu para enviar o link. Confira o e-mail e tente de novo.') : null;
   }, []);
   const signOut = useCallback(async () => { await supabaseBrowser().auth.signOut(); }, []);

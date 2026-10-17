@@ -1,0 +1,30 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="brand.css">
+<style>
+  body { width: 1200px; height: 630px; position: relative;
+    background: radial-gradient(circle at 2px 2px, rgba(242,234,219,.07) 1.4px, transparent 2px) 0 0/14px 14px, radial-gradient(ellipse at 20% 100%, #2a0d10 0%, transparent 60%), var(--wall); }
+  .shelf { position: absolute; left: 50px; bottom: 40px; width: 600px; height: 520px; }
+  .ledge { position: absolute; left: -20px; right: -20px; bottom: 0; height: 22px; background: #b3141c; box-shadow: 0 -2px 0 #e2231a inset, 0 14px 30px rgba(0,0,0,.5); }
+  .c { position: absolute; width: 170px; aspect-ratio: 600/853; border-radius: 3px; box-shadow: 0 14px 26px rgba(0,0,0,.55); object-fit: cover; }
+  .copy { position: absolute; left: 680px; right: 40px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; }
+  .kicker { font-weight: 800; font-size: 20px; letter-spacing: .16em; text-transform: uppercase; font-variation-settings: 'wdth' 112; color: var(--yellow); }
+  h1 { font-size: 92px; line-height: .88; margin: 14px 0 22px; }
+  h1 .r { color: var(--red); display: block; text-shadow: 5px 5px 0 var(--ink); }
+  h1 .y { color: var(--yellow); display: block; text-shadow: 5px 5px 0 var(--ink); }
+  p { font-size: 26px; line-height: 1.3; color: var(--paper); max-width: 21ch; font-weight: 500; }
+  p b { color: var(--yellow); font-weight: 800; }
+  .url { position: absolute; right: 56px; bottom: 34px; font-size: 18px; color: #b3ab9d; letter-spacing: .06em; }
+</style>
+<div class="shelf" id="shelf"><div class="ledge"></div></div>
+<div class="copy">
+  <div class="kicker">Maratona do MCU</div>
+  <h1 class="bangers"><span class="r">Avengers</span><span class="y">Countdown</span></h1>
+  <p>Do primeiro Vingador ao <b>Doutor Destino</b>, em ordem cronológica. 17.12.2026.</p>
+</div>
+<script>
+  const ids = ['07','11','19','06','03'];
+  ids.forEach((id, i) => {
+    const im = document.createElement('img'); im.className = 'c'; im.src = `../../public/covers/sm/${id}.webp`;
+    im.style.left = `${i * 92}px`; im.style.bottom = `${22 + (i % 2) * 6}px`; im.style.transform = `rotate(${[-7, -2, 3, 6, 9][i]}deg)`; im.style.zIndex = [1,2,3,4,5][i];
+    im.style.width = '175px'; document.getElementById('shelf').appendChild(im);
+  });
+</script>

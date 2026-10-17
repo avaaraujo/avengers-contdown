@@ -15,3 +15,9 @@ export function countdownParts(target: number, now: number) {
 }
 
 export const saga = (phase: number) => (phase <= 3 ? 'Saga do Infinito' : 'Saga do Multiverso');
+
+/** the small copy of a comic cover (384px wide), for phones and thumbnails */
+export const thumb = (cover: string) => cover.replace('/covers/', '/covers/sm/');
+
+/** where a film's detail lives; the premiere has its own page too */
+export const filmPath = (slug: string) => `/filme/${slug}`;

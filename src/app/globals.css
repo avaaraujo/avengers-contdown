@@ -339,3 +339,31 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
 .icon-btn { color: var(--paper); }
 #list li button.seen .ck { background: var(--red); border-color: var(--red); }
 #list li button.seen .ck svg { opacity: 1; }
+
+/* ---------- list tabs and extras ---------- */
+.tabs { display: flex; gap: 6px; padding: 0 20px 12px; }
+.tabs button { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
+.tabs button small { color: var(--muted); margin-left: 2px; }
+.tabs button.on { background: var(--paper); color: var(--wall); border-color: var(--paper); }
+.tabs button.on small { color: #5d574f; }
+.extras { list-style: none; margin: 0; padding: 0; }
+.extras .extras-note { padding: 0 20px 12px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.extras li { border-top: 1px solid var(--line); }
+.extras li.extras-note { border-top: 0; }
+.xrow { display: grid; grid-template-columns: 1fr auto; align-items: center; }
+#list .extras .xhead { background: none; border: 0; text-align: left; padding: 12px 8px 12px 20px; cursor: pointer; }
+#list .extras .xhead:hover { background: rgba(242,234,219,.05); }
+#list .extras .xcheck { background: none; border: 0; padding: 12px 20px 12px 8px; cursor: pointer; }
+.xcheck .ck { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; }
+.xcheck.seen .ck { background: var(--red); border-color: var(--red); }
+.xcheck .ck svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.xcheck.seen .ck svg { opacity: 1; }
+.xbody { padding: 0 20px 16px; font-size: 14px; }
+.xbody p { margin: 0 0 8px; line-height: 1.45; }
+.xbody .xmeta { color: var(--muted); font-size: 12px; }
+.xbody .where { border-radius: 6px; padding: 8px 12px 12px; color: var(--ink); font-family: var(--font-shantell), sans-serif; }
+.xbody .where .grp > b { min-width: 0; margin-right: 4px; }
+#list .credit { margin: 20px 20px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+#list ol[hidden] { display: none; }
+#list .extras .xhead, #list .extras .xcheck { display: block; width: auto; border-top: 0; }
+#list .extras .xhead { text-align: left; }

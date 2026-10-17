@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { countdownParts, hm, pad } from '@/lib/format';
+import { countdownParts, hm, pad, thumb } from '@/lib/format';
 
 export type Rect = { l: number; t: number; r: number; b: number };
 export type ShelfFilm = { n: number; title: string; year: number; runtime: number; cover: string };
@@ -16,7 +16,7 @@ export type ShelfCallbacks = {
 
 type Item = {
   n: number; f: ShelfFilm; g: THREE.Group; pages: THREE.Mesh; cover: THREE.Mesh; coverPivot: THREE.Group;
-  bag: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshPhysicalMaterial>; stamp: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+  bag: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>; stamp: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   front: THREE.MeshStandardMaterial; label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   watched: boolean; sat: number; bagOff: number; stampPop: number; hover: number; sel: number; open: number; isNext: boolean;
   home: THREE.Vector3;
@@ -66,15 +66,21 @@ export class ShelfScene {
   private font: string;
   private reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   private disposed = false;
+  /** phones and tablets: smaller textures, no MSAA/transmission/clearcoat, lower pixel ratio, throttled frames */
+  private lite = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 600;
+  private activeUntil = 0; private lastScrollY = -1; private shadowTick = 0;
 
   constructor(private canvas: HTMLCanvasElement, private films: ShelfFilm[], private finaleData: ShelfFinale, private cb: ShelfCallbacks) {
     this.font = getComputedStyle(document.body).getPropertyValue('--font-archivo').trim() || 'sans-serif';
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    const lite = this.lite;
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !lite, powerPreference: lite ? 'default' : 'high-performance' });
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, lite ? 1.5 : 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.needsUpdate = true;
+    this.renderer.shadowMap.type = lite ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+    if (lite) this.renderer.shadowMap.autoUpdate = false; // re-rendered every other frame, see update()
 
     const s = this.scene;
     s.background = new THREE.Color(0x121318);
@@ -83,12 +89,13 @@ export class ShelfScene {
     s.environmentIntensity = 0.35;
     s.add(new THREE.HemisphereLight(0xfff1dd, 0x101018, 0.6));
     const key = this.key;
-    key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0004; key.shadow.radius = 4;
+    key.castShadow = true; key.shadow.mapSize.set(lite ? 1024 : 2048, lite ? 1024 : 2048); key.shadow.bias = -0.0004; key.shadow.radius = 4;
     Object.assign(key.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 0.5, far: 30 }); key.shadow.camera.updateProjectionMatrix();
     s.add(key, key.target);
     const rim = new THREE.DirectionalLight(0x9fb4ff, 0.35); rim.position.set(6, -2, 4); s.add(rim);
     s.add(this.shelf);
 
+    this.wake();
     addEventListener('pointermove', this.onPointerMove);
     addEventListener('click', this.onClick);
     document.addEventListener('pointerleave', this.onLeave);
@@ -99,21 +106,24 @@ export class ShelfScene {
 
   /* ---------- public API ---------- */
   setWatched(set: Set<number>, nextN: number | null) {
+    this.wake();
     this.watched = new Set(set);
     for (const it of this.items) it.watched = set.has(it.n);
     if (nextN !== this.nextN) { this.nextN = nextN; this.redrawLabels(); }
   }
   /** pop the VISTO! stamp on a comic sitting on the shelf */
-  popStamp(n: number) { const it = this.items[n - 1]; if (it) it.stampPop = 1; }
+  popStamp(n: number) { this.wake(); const it = this.items[n - 1]; if (it) it.stampPop = 1; }
   setInsets(top: number, bottom: number) { this.insets = { top, bottom }; this.layout(); }
   /** take a comic off the shelf and open it; the finale hands off right away */
   open(n: number) {
+    this.wake();
     this.selected = n;
     this.cb.onHover(null, 0, 0);
     if (n === this.finaleData.n || !this.items.length) { this.pageShown = true; this.cb.onHandoff(n, this.finaleRect()); }
   }
   /** swap the issue while the page covers the canvas */
   goTo(n: number) {
+    this.wake();
     const old = this.items[(this.selected ?? 0) - 1];
     if (old) { old.sel = 0; old.open = 0; old.g.position.copy(old.home); old.coverPivot.rotation.y = 0; }
     this.selected = n;
@@ -122,13 +132,14 @@ export class ShelfScene {
   }
   /** the page starts shrinking: render again and return the rect it should shrink into */
   beginClose(): Rect {
+    this.wake();
     this.closing = true; this.pageShown = false;
     this.update(0);
     const it = this.items[(this.selected ?? 0) - 1];
     return it ? this.spreadRect(it) : this.finaleRect();
   }
   /** the page is gone: close the cover and put the comic back */
-  release() { this.selected = null; this.closing = false; this.pageShown = false; }
+  release() { this.wake(); this.selected = null; this.closing = false; this.pageShown = false; }
   dispose() {
     this.disposed = true;
     cancelAnimationFrame(this.raf); clearInterval(this.timer);
@@ -138,6 +149,8 @@ export class ShelfScene {
     removeEventListener('resize', this.onResize);
     this.renderer.dispose();
   }
+  /** a frame-rate hint for the lite mode: render at full pace for a moment, then idle slowly */
+  private wake() { this.activeUntil = performance.now() + 1600; }
   /** testing aid: advance the animation without requestAnimationFrame */
   settle(frames = 90) { for (let i = 0; i < frames; i++) this.update(1 / 30); }
 
@@ -210,13 +223,14 @@ export class ShelfScene {
   private async build() {
     await document.fonts.ready;
     const loader = new THREE.TextureLoader();
-    const aniso = this.renderer.capabilities.getMaxAnisotropy();
-    const load = (url: string) => new Promise<THREE.Texture | null>(res => loader.load(url, t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = aniso; res(t); }, undefined, () => res(null)));
+    const aniso = Math.min(this.renderer.capabilities.getMaxAnisotropy(), this.lite ? 2 : 8);
+    const load = (url: string) => new Promise<THREE.Texture | null>(res => loader.load(this.lite ? thumb(url) : url, t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = aniso; res(t); }, undefined, () => res(null)));
     const texes = await Promise.all([...this.films.map(f => load(f.cover)), load(this.finaleData.cover)]);
     if (this.disposed) return;
 
     const paperMat = new THREE.MeshStandardMaterial({ color: 0xe9e1d2, roughness: 0.85 });
-    const bagMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.16, roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.05, depthWrite: false, envMapIntensity: 2.4 });
+    const bagOpts = { color: 0xffffff, transparent: true, opacity: 0.16, roughness: 0.08, depthWrite: false, envMapIntensity: 2.4 };
+    const bagMat = this.lite ? new THREE.MeshStandardMaterial(bagOpts) : new THREE.MeshPhysicalMaterial({ ...bagOpts, clearcoat: 1, clearcoatRoughness: 0.05 });
     const innerMat = new THREE.MeshStandardMaterial({ map: this.innerPageTexture(), roughness: 0.9 });
     const stampTex = this.stampTexture();
     const pagesGeo = new THREE.BoxGeometry(W * 0.99, H * 0.99, T);
@@ -248,16 +262,18 @@ export class ShelfScene {
 
     // the premiere: a graded slab at the end of the shelf, the countdown on its label
     const fg = new THREE.Group();
-    const slab = new THREE.Mesh(new THREE.BoxGeometry(W * 1.22, H * 1.36, 0.1),
-      new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 1, thickness: 0.12, roughness: 0.06, ior: 1.45, clearcoat: 1 }));
+    // transmission makes three.js render the whole scene a second time, too heavy for phones: fake the glass there
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(W * 1.22, H * 1.36, 0.1), this.lite
+      ? new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.16, roughness: 0.05, depthWrite: false, envMapIntensity: 2.4 })
+      : new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 1, thickness: 0.12, roughness: 0.06, ior: 1.45, clearcoat: 1 }));
     slab.castShadow = true; slab.userData.n = this.finaleData.n;
     const inner = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshStandardMaterial({ map: texes[texes.length - 1], roughness: 0.5 }));
     inner.position.set(0, -H * 0.08, 0); inner.userData.n = this.finaleData.n;
     const labelTex = canvasTex(600, 230, () => {});
     const lab = new THREE.Mesh(new THREE.PlaneGeometry(W * 1.12, (W * 1.12 * 230) / 600), new THREE.MeshBasicMaterial({ map: labelTex, toneMapped: false }));
     lab.position.set(0, H * 0.55, 0.02); lab.userData.n = this.finaleData.n;
-    const glow = new THREE.PointLight(0xffd9a0, 6, 3.2, 1.6); glow.position.set(0, 0.2, 0.9);
-    fg.add(slab, inner, lab, glow); fg.scale.setScalar(1.12); this.shelf.add(fg);
+    fg.add(slab, inner, lab);
+    if (!this.lite) { const glow = new THREE.PointLight(0xffd9a0, 6, 3.2, 1.6); glow.position.set(0, 0.2, 0.9); fg.add(glow); } fg.scale.setScalar(1.12); this.shelf.add(fg);
     this.finale = { g: fg, labelTex, hit: [slab, inner, lab], hover: 0, home: new THREE.Vector3() };
     this.drawFinaleLabel();
     this.layout();
@@ -265,10 +281,12 @@ export class ShelfScene {
     this.update(0.016);
     this.cb.onReady();
     const loop = () => {
+      this.raf = requestAnimationFrame(loop);
       const now = performance.now();
+      if (scrollY !== this.lastScrollY) { this.lastScrollY = scrollY; this.wake(); }
+      if (this.lite && now - this.last < (now < this.activeUntil ? 30 : 90)) return; // ~30fps while moving, ~11fps at rest
       this.update(Math.min((now - this.last) / 1000, 0.1));
       this.last = now;
-      this.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
   }
@@ -280,10 +298,15 @@ export class ShelfScene {
     this.finale.labelTex.userData.redraw((g, w, h) => {
       g.fillStyle = '#e2231a'; g.fillRect(0, 0, w, h);
       g.fillStyle = '#f2c200'; g.fillRect(0, 0, w, 44);
-      g.fillStyle = '#121318'; g.font = `800 26px ${font}`; g.textBaseline = 'middle'; g.fillText(`ESTREIA · 17.12.2026 · Nº ${this.finaleData.n}`, 18, 23);
-      g.fillStyle = '#fff'; g.font = `900 96px ${font}`; g.textBaseline = 'alphabetic'; g.fillText(String(c.d), 18, 150);
-      const dw = g.measureText(String(c.d)).width;
-      g.font = `800 34px ${font}`; g.fillText('DIAS', 30 + dw, 110); g.fillText(`${pad(c.h)}:${pad(c.m)}:${pad(c.s)}`, 30 + dw, 150);
+      g.fillStyle = '#121318'; g.font = `800 26px ${font}`; g.textBaseline = 'middle'; g.fillText(`${Date.now() >= this.finaleData.premiereAt ? 'ESTREOU' : 'ESTREIA'} · 17.12.2026 · Nº ${this.finaleData.n}`, 18, 23);
+      g.fillStyle = '#fff'; g.textBaseline = 'alphabetic';
+      if (Date.now() >= this.finaleData.premiereAt) {
+        g.font = `900 78px ${font}`; g.fillText('EM CARTAZ', 18, 150);
+      } else {
+        g.font = `900 96px ${font}`; g.fillText(String(c.d), 18, 150);
+        const dw = g.measureText(String(c.d)).width;
+        g.font = `800 34px ${font}`; g.fillText('DIAS', 30 + dw, 110); g.fillText(`${pad(c.h)}:${pad(c.m)}:${pad(c.s)}`, 30 + dw, 150);
+      }
       g.font = `700 22px ${font}`; g.fillText(this.finaleData.title.toUpperCase(), 18, 200);
     });
   }
@@ -361,6 +384,7 @@ export class ShelfScene {
     if (this.overUI(e)) { this.pointer.set(9, 9); return; }
     this.pointer.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     this.pointerPx = { x: e.clientX, y: e.clientY };
+    this.wake();
   };
   private onLeave = () => this.pointer.set(9, 9);
   private onClick = (e: MouseEvent) => {
@@ -457,6 +481,9 @@ export class ShelfScene {
     fin.g.position.lerp(v, 1 - Math.exp(-sp * dt));
     fin.g.rotation.x = damp(fin.g.rotation.x, -0.08 + fin.hover * 0.06, sp, dt);
 
-    if (!this.pageShown) this.renderer.render(this.scene, cam); // the page covers the canvas while reading
+    if (!this.pageShown) {
+      if (this.lite && ++this.shadowTick % 2 === 0) this.renderer.shadowMap.needsUpdate = true;
+      this.renderer.render(this.scene, cam);
+    } // the page covers the canvas while reading
   }
 }

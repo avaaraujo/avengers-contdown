@@ -3,9 +3,9 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { Catalog } from '@/lib/types';
-import { countdownParts, dec, hm, pad } from '@/lib/format';
+import { countdownParts, dec, filmPath, hm, pad, thumb } from '@/lib/format';
 import type { Rect, ShelfScene } from './shelf/ShelfScene';
-import { ComicPage } from './ComicPage';
+import { ComicPage, Offers } from './ComicPage';
 import { Check, Close } from './Burst';
 import { useProgress } from './useProgress';
 import { AuthPanel } from './AuthPanel';
@@ -16,10 +16,13 @@ const clockSnapshot = () => Math.floor(Date.now() / 1000) * 1000;
 const insetFor = (r: Rect) =>
   `inset(${Math.max(0, r.t)}px ${Math.max(0, innerWidth - r.r)}px ${Math.max(0, innerHeight - r.b)}px ${Math.max(0, r.l)}px round 6px)`;
 
-export function CountdownApp({ catalog }: { catalog: Catalog }) {
-  const { films, finale } = catalog;
+type Tab = 'films' | 'series' | 'xmen';
+
+export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; initialN?: number | null }) {
+  const { films, finale, extras } = catalog;
   const total = useMemo(() => films.reduce((a, f) => a + f.runtime, 0), [films]);
-  const progress = useProgress(films);
+  const items = useMemo(() => [...films.map(f => ({ id: f.id, n: f.n })), ...extras.map(x => ({ id: x.id, n: x.key }))], [films, extras]);
+  const progress = useProgress(items);
   const { watched } = progress;
 
   // the clock only exists in the browser; the prerendered shell shows placeholders
@@ -29,6 +32,8 @@ export function CountdownApp({ catalog }: { catalog: Catalog }) {
   const [phase, setPhase] = useState<Phase>('closed');
   const [pageN, setPageN] = useState<number | null>(null);
   const [listOpen, setListOpen] = useState(false);
+  const [tab, setTab] = useState<Tab>('films');
+  const [openExtra, setOpenExtra] = useState<number | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [noWebgl, setNoWebgl] = useState(false);
   const [ready, setReady] = useState(false);
@@ -43,6 +48,7 @@ export function CountdownApp({ catalog }: { catalog: Catalog }) {
   const phaseRef = useRef<Phase>('closed');
   const go = useCallback((p: Phase) => { phaseRef.current = p; setPhase(p); }, []);
   const openDetailRef = useRef<(n: number) => void>(() => {});
+  const initialDone = useRef(false);
 
   const nextFilm = films.find(f => !watched.has(f.n)) ?? null;
 
@@ -84,18 +90,25 @@ export function CountdownApp({ catalog }: { catalog: Catalog }) {
   }, [ready]);
 
   /* opening and closing the comic page */
-  const openDetail = useCallback((n: number) => {
+  const pathOf = useCallback((n: number) => filmPath(n === finale.n ? finale.slug : films[n - 1].slug), [films, finale]);
+  const openDetail = useCallback((n: number, fromHistory = false) => {
     setListOpen(false);
     const p = phaseRef.current;
-    if (p === 'open') { sceneRef.current?.goTo(n); setPageN(n); pageRef.current?.scrollTo(0, 0); return; }
+    if (p === 'open') {
+      if (pageN === n) return;
+      sceneRef.current?.goTo(n); setPageN(n); pageRef.current?.scrollTo(0, 0);
+      if (!fromHistory) history.replaceState(history.state, '', pathOf(n));
+      return;
+    }
     if (p !== 'closed') return;
+    if (!fromHistory && location.pathname !== pathOf(n)) history.pushState({ ac: 1 }, '', pathOf(n));
     markedInPage.current = false;
     setTag(null);
     go('flying');
     if (sceneRef.current) sceneRef.current.open(n);
     else { handoffRect.current = { l: innerWidth / 2, r: innerWidth / 2, t: innerHeight / 2, b: innerHeight / 2 }; setPageN(n); go('open'); }
-  }, [go]);
-  useEffect(() => { openDetailRef.current = openDetail; }, [openDetail]);
+  }, [go, pathOf, pageN]);
+  useEffect(() => { openDetailRef.current = n => openDetail(n); }, [openDetail]);
 
   useLayoutEffect(() => {
     const el = pageRef.current;
@@ -111,8 +124,13 @@ export function CountdownApp({ catalog }: { catalog: Catalog }) {
     (el.querySelector('[data-autofocus]') as HTMLElement | null)?.focus({ preventScroll: true });
   }, [phase]);
 
-  const closeDetail = useCallback(() => {
+  const closeDetail = useCallback((fromHistory = false) => {
     if (phaseRef.current !== 'open') return;
+    if (!fromHistory) {
+      // we pushed the film's entry: going back closes it (popstate lands here again); a deep link just rewrites the URL
+      if ((history.state as { ac?: number } | null)?.ac) { history.back(); return; }
+      history.replaceState(history.state, '', '/');
+    }
     const el = pageRef.current!;
     const rect = sceneRef.current?.beginClose() ?? { l: innerWidth / 2, r: innerWidth / 2, t: innerHeight / 2, b: innerHeight / 2 };
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -126,6 +144,30 @@ export function CountdownApp({ catalog }: { catalog: Catalog }) {
       if (markedInPage.current && n !== null) sceneRef.current?.popStamp(n);
     }, reduce ? 0 : 460);
   }, [pageN, go]);
+
+  /* deep link on load, and the browser's back/forward buttons */
+  const nFromPath = useCallback((path: string) => {
+    const m = /^\/filme\/([^/]+)\/?$/.exec(path);
+    if (!m) return null;
+    return m[1] === finale.slug ? finale.n : films.find(f => f.slug === m[1])?.n ?? null;
+  }, [films, finale]);
+  useEffect(() => {
+    if (!ready || initialDone.current) return;
+    initialDone.current = true;
+    if (initialN !== null) queueMicrotask(() => openDetail(initialN, true));
+  }, [ready, initialN, openDetail]);
+  useEffect(() => {
+    const onPop = () => {
+      const n = nFromPath(location.pathname);
+      if (n === null) closeDetail(true); else openDetail(n, true);
+    };
+    addEventListener('popstate', onPop);
+    return () => removeEventListener('popstate', onPop);
+  }, [closeDetail, openDetail, nFromPath]);
+  useEffect(() => {
+    const t = pageN === null || phase === 'closed' ? null : pageN === finale.n ? finale.title : films[pageN - 1]?.title;
+    document.title = t ? `${t} · Avengers Countdown` : 'Avengers Countdown';
+  }, [pageN, phase, films, finale]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -152,14 +194,18 @@ export function CountdownApp({ catalog }: { catalog: Catalog }) {
   }, [watched, progress]);
 
   /* numbers */
-  const seenMin = films.filter(f => watched.has(f.n)).reduce((a, f) => a + f.runtime, 0);
-  const leftMin = total - seenMin, leftFilms = films.length - watched.size;
+  const seenFilms = films.filter(f => watched.has(f.n));
+  const seenMin = seenFilms.reduce((a, f) => a + f.runtime, 0);
+  const leftMin = total - seenMin, leftFilms = films.length - seenFilms.length;
+  const released = now !== null && now >= finale.premiereAt;
+  const sinceDays = released ? Math.floor((now - finale.premiereAt) / 864e5) : 0;
   const cd = now === null ? null : countdownParts(finale.premiereAt, now);
   const days = now === null ? null : Math.max((finale.premiereAt - now) / 864e5, 0.01);
   let pace = '—', paceK = 'filmes por dia';
   if (days !== null) {
     const perDay = leftFilms / days;
-    if (leftFilms === 0) { pace = 'Pronto'; paceK = 'para a estreia'; }
+    if (released) { pace = 'Em cartaz'; paceK = leftFilms === 0 ? 'e você estava pronto' : 'a maratona segue, sem pressa'; }
+    else if (leftFilms === 0) { pace = 'Pronto'; paceK = 'para a estreia'; }
     else if (perDay < 1) { pace = `1 a cada ${dec(1 / perDay, 0)}`; paceK = `dias · ${hm(leftMin / days)} por dia`; }
     else { pace = dec(perDay); paceK = `filmes por dia · ${hm(leftMin / days)}`; }
   }
@@ -181,17 +227,19 @@ export function CountdownApp({ catalog }: { catalog: Catalog }) {
           </nav>
         </div>
         <div className="count" data-ui>
-          <div className="days num">{cd ? cd.d : '--'}</div>
+          <div className="days num">{released ? sinceDays : cd ? cd.d : '--'}</div>
           <div className="rest">
-            <div className="unit">dias</div>
-            <div className="clock num">{cd ? `${pad(cd.h)}:${pad(cd.m)}:${pad(cd.s)}` : '--:--:--'}</div>
-            <div className="to">até <strong>{finale.title}</strong><br />estreia no Brasil · 17.12.2026</div>
+            <div className="unit">{released && sinceDays === 1 ? 'dia' : 'dias'}</div>
+            <div className="clock num">{released ? 'Nos cinemas' : cd ? `${pad(cd.h)}:${pad(cd.m)}:${pad(cd.s)}` : '--:--:--'}</div>
+            {released
+              ? <div className="to"><strong>{finale.title}</strong> estreou<br />no Brasil · 17.12.2026</div>
+              : <div className="to">até <strong>{finale.title}</strong><br />estreia no Brasil · 17.12.2026</div>}
           </div>
         </div>
         <div className={`next${nextFilm ? '' : ' done'}`} data-ui>
           {nextFilm ? (
             <>
-              <img src={nextFilm.cover} alt="" />
+              <img src={thumb(nextFilm.cover)} alt="" />
               <div className="label">Próximo · Nº {nextFilm.n}</div>
               <div className="t">{nextFilm.title}</div>
               <div className="actions">
@@ -201,9 +249,9 @@ export function CountdownApp({ catalog }: { catalog: Catalog }) {
             </>
           ) : (
             <>
-              <img src={finale.cover} alt="" />
+              <img src={thumb(finale.cover)} alt="" />
               <div className="label">Maratona completa</div>
-              <div className="t">Você está pronto para o Doutor Destino.</div>
+              <div className="t">{released ? 'Hora de ver o Doutor Destino no cinema.' : 'Você está pronto para o Doutor Destino.'}</div>
               <div className="actions"><button className="btn btn-ink" onClick={() => openDetail(finale.n)}>Ver a última edição</button></div>
             </>
           )}
@@ -218,10 +266,10 @@ export function CountdownApp({ catalog }: { catalog: Catalog }) {
           <div className="stat pace"><div className="v num">{pace}</div><div className="k">{paceK}</div></div>
         </div>
         <div className="bar" data-ui>
-          <div className="track" role="progressbar" aria-label="Progresso da maratona" aria-valuemin={0} aria-valuemax={films.length} aria-valuenow={watched.size}>
+          <div className="track" role="progressbar" aria-label="Progresso da maratona" aria-valuemin={0} aria-valuemax={films.length} aria-valuenow={seenFilms.length}>
             <div className="fill" style={{ width: `${(seenMin / total) * 100}%` }} />
           </div>
-          <div className="pct num">{watched.size} de {films.length}</div>
+          <div className="pct num">{seenFilms.length} de {films.length}</div>
         </div>
         <div className="demo" data-ui role="status">
           {progress.error
@@ -246,7 +294,7 @@ export function CountdownApp({ catalog }: { catalog: Catalog }) {
         className={phase === 'open' || phase === 'closing' ? `open${phase === 'open' ? ' shown' : ''}` : undefined} data-ui>
         {pageN !== null && phase !== 'closed' && phase !== 'flying' && (
           <ComicPage n={pageN} films={films} finale={finale} watched={watched} now={now} offersCheckedAt={catalog.offersCheckedAt}
-            onToggle={toggle} onClose={closeDetail} onGo={openDetail} />
+            onToggle={toggle} onClose={() => closeDetail()} onGo={n => openDetail(n)} />
         )}
       </section>
 
@@ -255,19 +303,58 @@ export function CountdownApp({ catalog }: { catalog: Catalog }) {
           <h2>Ordem cronológica</h2>
           <button className="icon-btn" onClick={() => setListOpen(false)} aria-label="Fechar lista"><Close /></button>
         </header>
-        <ol>
+        <div className="tabs" role="tablist" aria-label="Seções da lista">
+          {([['films', 'Maratona', films.length], ['series', 'Séries', extras.filter(x => x.kind === 'series').length], ['xmen', 'X-Men', extras.filter(x => x.kind === 'xmen').length]] as const)
+            .filter(([k, , c]) => k === 'films' || c > 0)
+            .map(([k, label, c]) => (
+              <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : undefined} onClick={() => setTab(k)}>{label} <small>{c}</small></button>
+            ))}
+        </div>
+        {tab !== 'films' && (
+          <ul className="extras">
+            <li className="extras-note">Extras ficam fora da conta do countdown: são para quem quer ir além da fila principal.</li>
+            {extras.filter(x => x.kind === tab).map(x => {
+              const seen = watched.has(x.key), isOpen = openExtra === x.id;
+              return (
+                <li key={x.id} className={isOpen ? 'open' : undefined}>
+                  <div className="xrow">
+                    <button className="xhead" aria-expanded={isOpen} onClick={() => setOpenExtra(isOpen ? null : x.id)}>
+                      <span className="lt">{x.title}<small>{x.year} · {x.runtime ? hm(x.runtime) : x.note}</small></span>
+                    </button>
+                    <button className={`xcheck${seen ? ' seen' : ''}`} aria-pressed={seen} aria-label={`${seen ? 'Desmarcar' : 'Marcar como visto'}: ${x.title}`} onClick={() => void toggle(x.key)}>
+                      <span className="ck"><Check /></span>
+                    </button>
+                  </div>
+                  {isOpen && (
+                    <div className="xbody">
+                      <p>{x.synopsis}</p>
+                      <p className="xmeta">{x.kind === 'series' ? 'Criação' : 'Direção'}: {x.director ?? '—'}{x.runtime && x.note ? ` · ${x.note}` : ''}{x.runtime ? '' : x.note ? ` · ${x.note}` : ''}</p>
+                      <div className="where">
+                        <Offers offers={x.offers} empty={catalog.tmdb ? 'Não está em nenhum streaming no Brasil agora.' : 'Streaming ainda sem dados para este título.'} />
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <ol hidden={tab !== 'films'}>
           {films.map(f => (
             <li key={f.n}>
               <button className={watched.has(f.n) ? 'seen' : undefined} onClick={() => openDetail(f.n)}
                 aria-label={`Nº ${f.n}, ${f.title}, ${watched.has(f.n) ? 'visto' : 'não visto'}`}>
                 <span className="n num">{pad(f.n)}</span>
-                <img src={f.cover} alt="" loading="lazy" />
+                <img src={thumb(f.cover)} alt="" loading="lazy" />
                 <span className="lt">{f.title}<small>{f.year} · {hm(f.runtime)}</small></span>
                 <span className="ck"><Check /></span>
               </button>
             </li>
           ))}
         </ol>
+        <p className="credit">
+          Capas: Marvel Database. Streaming: JustWatch{catalog.tmdb ? ' via TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado por ele' : ''}.
+        </p>
       </nav>
 
       <div id="loading" className={ready ? 'gone' : undefined}>Arrumando a estante…</div>
