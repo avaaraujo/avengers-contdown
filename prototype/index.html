@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Avengers Countdown</title>
+<meta name="description" content="Protótipo: estante de gibis em 3D para maratonar o MCU até a estreia de Vingadores: Doutor Destino.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Bangers&family=Shantell+Sans:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --wall: #121318;
+    --wall-2: #1b1c23;
+    --paper: #f2eadb;
+    --muted: #b3ab9d;
+    --red: #e2231a;
+    --red-deep: #b3141c;
+    --yellow: #f2c200;
+    --line: rgba(242, 234, 219, .16);
+    /* comic page */
+    --news: #efe3c8;
+    --ink: #111111;
+    --c-yellow: #f7c600;
+    --c-red: #e2231a;
+    --c-blue: #1d5fb4;
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--wall); scrollbar-color: var(--red-deep) var(--wall); }
+  html.page-open { overflow: hidden; }
+  body {
+    margin: 0; background: var(--wall); color: var(--paper);
+    font-family: Archivo, system-ui, sans-serif; font-size: 15px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--yellow); color: var(--wall); }
+  :focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; border-radius: 2px; }
+  button { font: inherit; color: inherit; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+  #track { position: relative; z-index: 0; pointer-events: none; }
+
+  /* ---------- top HUD: the countdown ---------- */
+  .hud-top {
+    position: fixed; z-index: 2; inset: 0 0 auto 0;
+    padding: 18px clamp(16px, 3vw, 40px) 42px;
+    background: linear-gradient(var(--wall) 0%, var(--wall) 62%, rgba(18,19,24,0) 100%);
+    display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 8px 28px;
+    pointer-events: none; transition: opacity .3s;
+  }
+  .hud-top > * { pointer-events: auto; }
+  .brand {
+    grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700;
+    font-variation-settings: "wdth" 112;
+  }
+  .brand b { color: var(--red); font-weight: 900; }
+  .chip {
+    border: 1px solid var(--line); background: rgba(242,234,219,.04); border-radius: 999px;
+    padding: 6px 12px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700;
+    cursor: pointer; transition: background .2s, border-color .2s;
+  }
+  .chip:hover { background: rgba(242,234,219,.1); border-color: rgba(242,234,219,.3); }
+  .count { display: flex; align-items: flex-end; gap: 14px; }
+  .count .days { font-size: clamp(88px, 13vw, 168px); line-height: .78; font-weight: 900; letter-spacing: -0.04em; font-variation-settings: "wdth" 62; }
+  .count .rest { padding-bottom: 4px; }
+  .count .unit { font-size: clamp(18px, 2vw, 24px); font-weight: 800; font-variation-settings: "wdth" 70; line-height: 1; }
+  .count .clock { font-size: clamp(26px, 3.2vw, 40px); font-weight: 800; font-variation-settings: "wdth" 62; line-height: 1; margin-top: 4px; }
+  .count .to { color: var(--muted); font-size: 13px; margin-top: 8px; max-width: 30ch; line-height: 1.35; }
+  .count .to strong { color: var(--paper); font-weight: 700; }
+  .next {
+    grid-column: 3; display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; align-items: center;
+    max-width: 440px; padding: 12px 14px 12px 12px; border-radius: 6px;
+    background: var(--yellow); color: var(--wall); box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .next img { grid-row: 1 / span 3; width: 46px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 2px; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+  .next .label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 800; font-variation-settings: "wdth" 110; }
+  .next .t { font-weight: 800; font-size: 17px; line-height: 1.15; font-variation-settings: "wdth" 80; }
+  .next .actions { display: flex; gap: 8px; margin-top: 6px; }
+  .btn { border: 0; border-radius: 4px; padding: 8px 12px; cursor: pointer; font-weight: 800; font-size: 13px; transition: transform .15s var(--ease-out), background .2s; }
+  .btn:active { transform: translateY(1px); }
+  .btn-ink { background: var(--wall); color: var(--paper); }
+  .btn-ink:hover { background: #000; }
+  .btn-ghost { background: transparent; color: var(--wall); box-shadow: inset 0 0 0 1.5px var(--wall); }
+  .btn-ghost:hover { background: rgba(18,19,24,.08); }
+  .next.done { background: var(--paper); }
+
+  /* ---------- bottom HUD ---------- */
+  .hud-bottom {
+    position: fixed; z-index: 2; inset: auto 0 0 0;
+    padding: 40px clamp(16px, 3vw, 40px) calc(16px + env(safe-area-inset-bottom));
+    background: linear-gradient(rgba(18,19,24,0) 0%, var(--wall) 45%);
+    pointer-events: none; transition: opacity .3s;
+  }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); pointer-events: auto; }
+  .stat { padding: 12px 18px 4px 0; }
+  .stat + .stat { padding-left: 18px; border-left: 1px solid var(--line); }
+  .stat .v { font-size: clamp(26px, 3.4vw, 46px); font-weight: 900; line-height: 1; letter-spacing: -0.02em; font-variation-settings: "wdth" 66; }
+  .stat .k { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .stat.pace .v { color: var(--yellow); }
+  .bar { margin-top: 12px; display: flex; align-items: center; gap: 12px; pointer-events: auto; }
+  .bar .track { flex: 1; height: 12px; border-radius: 2px; background: rgba(242,234,219,.08); overflow: hidden; position: relative; }
+  .bar .fill {
+    position: absolute; inset: 0 auto 0 0; width: 0%; background-color: var(--red);
+    background-image: radial-gradient(circle at center, rgba(0,0,0,.28) 34%, transparent 36%); background-size: 6px 6px;
+    transition: width .9s var(--ease-out);
+  }
+  .bar .pct { font-weight: 800; font-size: 14px; font-variation-settings: "wdth" 80; min-width: 9ch; text-align: right; }
+  .demo { color: var(--muted); font-size: 12px; margin-top: 8px; display: flex; gap: 10px; align-items: center; pointer-events: auto; }
+  .demo button { background: none; border: 0; padding: 0; color: var(--paper); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 12px; }
+  html.page-busy .hud-top, html.page-busy .hud-bottom { opacity: 0; pointer-events: none; }
+  html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.page-busy .demo { pointer-events: none; }
+
+  #tag {
+    position: fixed; z-index: 3; pointer-events: none; transform: translate(-50%, -130%);
+    background: var(--paper); color: var(--wall); padding: 6px 10px; border-radius: 3px;
+    font-size: 13px; font-weight: 700; white-space: nowrap; opacity: 0; transition: opacity .15s;
+    box-shadow: 0 6px 18px rgba(0,0,0,.4);
+  }
+  #tag.on { opacity: 1; }
+  #tag small { color: #5d574f; font-weight: 600; margin-left: 6px; }
+
+  /* =========================================================
+     The detail screen: one full comic-book page.
+     ========================================================= */
+  #page {
+    position: fixed; inset: 0; z-index: 6; visibility: hidden; overflow-y: auto; overscroll-behavior: contain;
+    color: var(--ink); background-color: var(--news);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(120, 84, 30, .10) 1px, transparent 1.3px),
+      radial-gradient(circle at 70% 20%, rgba(255,255,255,.35), transparent 60%);
+    background-size: 5px 5px, 100% 100%;
+    font-family: "Shantell Sans", Archivo, sans-serif;
+    clip-path: inset(50% 50% 50% 50%);
+    scrollbar-color: var(--ink) var(--news);
+  }
+  #page.open { visibility: visible; }
+  #page ::selection { background: var(--c-yellow); color: var(--ink); }
+  #page :focus-visible { outline: 3px solid var(--c-blue); outline-offset: 2px; }
+  .cp > * { opacity: 0; transition: opacity .35s .12s; }
+  #page.open.shown .cp > * { opacity: 1; }
+  .cp {
+    min-height: 100dvh; display: grid; gap: 12px; padding: 12px;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .panel { position: relative; border: 4px solid var(--ink); background: #fbf4e4; }
+  .lettering {
+    font-family: Bangers, Archivo, sans-serif; font-weight: 400; letter-spacing: .02em; line-height: .92;
+    -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
+  }
+  .halftone-red {
+    background-color: var(--c-red);
+    background-image: radial-gradient(circle at center, rgba(0,0,0,.22) 30%, transparent 32%),
+                      radial-gradient(circle at center, rgba(255,210,0,.22) 30%, transparent 32%);
+    background-size: 8px 8px, 8px 8px; background-position: 0 0, 4px 4px;
+  }
+
+  /* top strip */
+  .cp-top { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 6px 12px; min-height: 64px; }
+  .back {
+    justify-self: start; display: inline-flex; align-items: center; gap: 10px; border: 0; background: none; cursor: pointer;
+    font-family: "Shantell Sans", sans-serif; font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: .04em; padding: 6px 4px;
+  }
+  .back svg { width: 30px; height: 18px; }
+  .back:hover span { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+  .mast { font-size: 34px; text-align: center; transform: rotate(-2deg); }
+  .mast .a { color: var(--c-red); display: block; }
+  .mast .b { color: var(--c-blue); display: block; font-size: .72em; margin-top: -2px; }
+  .burst { position: relative; display: inline-grid; place-items: center; }
+  .burst > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .burst > span { position: relative; }
+  .days-burst { justify-self: end; width: 190px; height: 74px; font-size: 34px; color: var(--c-red); }
+  .days-burst > span { transform: rotate(-4deg); }
+
+  /* splash */
+  .cp-splash { grid-row: 2; overflow: hidden; background: var(--ink); min-height: 420px; }
+  .cp-splash img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; }
+  .cp-splash::before {
+    content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background-image: radial-gradient(circle at center, rgba(0,0,0,.16) 28%, transparent 30%); background-size: 5px 5px; mix-blend-mode: multiply;
+  }
+  .cp-splash::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(transparent 38%, rgba(10,10,14,.92) 100%); pointer-events: none; }
+  .issue-box {
+    position: absolute; z-index: 2; top: 14px; left: 14px; background: #fbf4e4; border: 3px solid var(--ink);
+    padding: 4px 10px 2px; font-family: Bangers, sans-serif; font-size: 30px; line-height: 1;
+  }
+  .splash-text { position: absolute; z-index: 2; left: 22px; right: 22px; bottom: 20px; }
+  .splash-text h2 { margin: 0; font-size: clamp(44px, 5.4vw, 92px); text-wrap: balance; }
+  .splash-text h2 .l1 { color: var(--c-red); display: block; -webkit-text-stroke: 3px var(--ink); text-shadow: 4px 4px 0 var(--ink); }
+  .splash-text h2 .l2 { color: var(--c-yellow); display: block; -webkit-text-stroke: 3px var(--ink); text-shadow: 4px 4px 0 var(--ink); }
+  .splash-text .en { margin: 10px 0 0; color: #f6efe0; font-weight: 700; font-size: 15px; text-transform: uppercase; letter-spacing: .08em; transform: rotate(-1deg); display: inline-block; }
+
+  /* right column */
+  .cp-col { grid-row: 2; display: grid; gap: 12px; grid-template-rows: auto auto auto 1fr; min-width: 0; }
+  .caption { background: var(--c-yellow); padding: 16px 20px; }
+  .caption p { margin: 0; font-size: 18px; line-height: 1.45; font-style: italic; font-weight: 500; max-width: 62ch; }
+  .caption .phase { position: absolute; top: -4px; right: -4px; background: var(--ink); color: var(--c-yellow); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; padding: 4px 10px; font-style: normal; }
+  .ficha { display: grid; grid-template-columns: 150px 1fr; overflow: hidden; }
+  .ficha .tag { display: grid; place-items: center; border-right: 4px solid var(--ink); }
+  .ficha .tag .burst { width: 150px; height: 120px; font-size: 30px; color: var(--c-red); text-align: center; }
+  .ficha .tag .burst > span { transform: rotate(-10deg); }
+  .ficha dl { margin: 0; padding: 6px 16px; display: grid; }
+  .ficha dl div { display: grid; grid-template-columns: max-content 1fr; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 2px solid rgba(17,17,17,.75); }
+  .ficha dl div:last-child { border-bottom: 0; }
+  .ficha dt { font-weight: 800; font-size: 15px; }
+  .ficha dt::after { content: ":"; }
+  .ficha dd { margin: 0; font-family: Bangers, sans-serif; font-size: 23px; letter-spacing: .03em; color: var(--c-blue); line-height: 1.05; }
+  .ficha dd.red { color: var(--c-red); }
+  .where { padding: 12px 16px 14px; background: #fff; }
+  .where h3 { margin: 0 0 10px; font-size: 26px; color: var(--ink); -webkit-text-stroke: 0; }
+  .where .grp { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 8px; }
+  .where .grp > b { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; min-width: 92px; }
+  .sticker { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border: 3px solid var(--ink); border-radius: 10px; background: #fff; font-weight: 800; font-size: 14px; transform: rotate(var(--r, 0deg)); box-shadow: 3px 3px 0 var(--ink); }
+  .sticker img { width: 30px; height: 30px; border-radius: 6px; }
+  .sticker small { font-weight: 600; color: #444; }
+  .where .none { margin: 0; font-weight: 700; font-style: italic; font-size: 16px; }
+  .where .src { margin: 10px 0 0; font-size: 12px; color: #555; }
+  .action { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 14px 18px; min-height: 170px; }
+  .pow {
+    border: 0; background: none; padding: 0; cursor: pointer; width: 100%; max-width: 420px; height: clamp(150px, 16vw, 210px); justify-self: center; display: grid;
+    font-size: clamp(36px, 3.8vw, 58px); color: var(--c-red); transition: transform .2s var(--ease-out);
+  }
+  .pow > span { transform: rotate(-6deg); text-align: center; -webkit-text-stroke: 2.5px var(--ink); padding: 0 18%; line-height: .95; }
+  .pow:hover { transform: scale(1.04) rotate(-1deg); }
+  .pow:active { transform: scale(.97); }
+  .pow.seen { color: var(--c-blue); }
+  .undo { display: block; margin: 6px auto 0; background: none; border: 0; cursor: pointer; font-weight: 800; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; color: #fff; }
+  .balloon {
+    position: relative; background: #fff; border: 3px solid var(--ink); border-radius: 50%;
+    padding: 18px 22px; text-align: center; min-width: 120px;
+  }
+  .balloon::after {
+    content: ""; position: absolute; left: 10px; bottom: -14px; width: 26px; height: 22px; background: #fff;
+    border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink); transform: skewX(-35deg) rotate(10deg); border-radius: 0 0 6px 0;
+  }
+  .balloon b { font-family: Bangers, sans-serif; font-weight: 400; font-size: 44px; line-height: 1; color: var(--c-blue); display: block; }
+  .balloon b em { font-style: normal; color: var(--c-red); }
+  .balloon small { font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .finale-count { font-family: Bangers, sans-serif; font-size: 88px; line-height: .9; color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 5px 5px 0 var(--ink); }
+  .finale-count small { display: block; font-size: 32px; color: var(--c-yellow); }
+
+  /* bottom nav */
+  .cp-nav { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cp-nav button {
+    display: flex; align-items: center; gap: 14px; padding: 10px 18px; cursor: pointer; text-align: left;
+    background: var(--c-yellow); border: 4px solid var(--ink); min-height: 64px;
+  }
+  .cp-nav button:last-child { justify-content: flex-end; text-align: right; }
+  .cp-nav button:hover { background: #ffd83a; }
+  .cp-nav button:disabled { visibility: hidden; }
+  .cp-nav svg { width: 26px; height: 30px; flex: none; }
+  .cp-nav small { display: block; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+  .cp-nav strong { font-family: Bangers, sans-serif; font-weight: 400; font-size: 28px; letter-spacing: .03em; color: var(--c-blue); line-height: 1; }
+
+  /* ---------- list view (also the no-WebGL fallback) ---------- */
+  #list {
+    position: fixed; z-index: 4; top: 0; left: 0; bottom: 0; width: min(420px, 100%); overflow-y: auto;
+    background: var(--wall-2); transform: translateX(-104%); transition: transform .5s var(--ease-out);
+    box-shadow: 20px 0 60px rgba(0,0,0,.45); padding: 20px 0 40px;
+  }
+  #list.open { transform: none; }
+  #list header { display: flex; justify-content: space-between; align-items: center; padding: 0 20px 12px; }
+  #list h2 { margin: 0; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+  #list ol { list-style: none; margin: 0; padding: 0; }
+  #list li button { width: 100%; display: grid; grid-template-columns: 34px 40px 1fr auto; gap: 12px; align-items: center; padding: 8px 20px; background: none; border: 0; border-top: 1px solid var(--line); cursor: pointer; text-align: left; }
+  #list li button:hover { background: rgba(242,234,219,.05); }
+  #list .n { color: var(--muted); font-weight: 800; font-variation-settings: "wdth" 70; }
+  #list img { width: 40px; aspect-ratio: 2/3; object-fit: cover; border-radius: 2px; }
+  #list .lt { font-weight: 700; line-height: 1.25; font-size: 14px; }
+  #list .lt small { display: block; color: var(--muted); font-weight: 500; }
+  #list .ck { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; }
+  #list .seen .ck { background: var(--red); border-color: var(--red); }
+  #list .ck svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+  #list .seen .ck svg { opacity: 1; }
+  .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(242,234,219,.08); cursor: pointer; display: grid; place-items: center; }
+  .icon-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .no-webgl #list { transform: none; position: relative; width: 100%; box-shadow: none; padding-top: 320px; }
+
+  #loading { position: fixed; inset: 0; z-index: 7; display: grid; place-items: center; background: var(--wall); transition: opacity .6s; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: 12px; color: var(--muted); }
+  #loading.gone { opacity: 0; pointer-events: none; }
+
+  @media (max-width: 860px) {
+    .hud-top { grid-template-columns: 1fr; padding: 12px 16px 22px; gap: 6px 16px; }
+    .brand { font-size: 11px; }
+    .next { grid-column: 1; max-width: none; padding: 8px 10px 8px 8px; gap: 0 10px; }
+    .next img { width: 34px; }
+    .next .t { font-size: 15px; }
+    .next .actions { margin-top: 4px; }
+    .next .btn { padding: 6px 10px; font-size: 12px; }
+    .count .days { font-size: 72px; }
+    .count .clock { font-size: 24px; }
+    .count .to { font-size: 12px; margin-top: 4px; }
+    .hud-bottom { padding: 22px 16px calc(10px + env(safe-area-inset-bottom)); }
+    .stat { padding: 8px 6px 2px 0; }
+    .stat + .stat { padding-left: 8px; }
+    .stat .v { font-size: 20px; }
+    .stat .k { font-size: 11px; line-height: 1.25; }
+    .stat.pace .k { display: none; }
+    .bar { margin-top: 8px; }
+    .demo { font-size: 11px; margin-top: 6px; }
+
+    .cp { grid-template-columns: 1fr; grid-template-rows: none; gap: 10px; padding: 10px; }
+    .cp-top { grid-template-columns: 1fr auto; min-height: 52px; padding: 4px 8px; }
+    .cp-top .mast { display: none; }
+    .back { font-size: 13px; }
+    .days-burst { width: 140px; height: 58px; font-size: 26px; }
+    .cp-splash, .cp-col { grid-row: auto; }
+    .cp-splash { min-height: 0; aspect-ratio: 4 / 5; }
+    .splash-text h2 { font-size: 46px; }
+    .ficha { grid-template-columns: 1fr; }
+    .ficha .tag { border-right: 0; border-bottom: 4px solid var(--ink); padding: 4px; }
+    .ficha .tag .burst { width: 200px; height: 74px; font-size: 26px; }
+    .caption p { font-size: 16px; }
+    .action { grid-template-columns: 1fr; justify-items: center; }
+    .cp-nav { grid-template-columns: 1fr; }
+    .cp-nav strong { font-size: 24px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<canvas id="scene" aria-hidden="true"></canvas>
+<div id="track"></div>
+
+<header class="hud-top">
+  <div class="brand">
+    <span>Avengers <b>Countdown</b></span>
+    <nav><button class="chip" id="open-list" aria-controls="list" aria-expanded="false">Lista</button></nav>
+  </div>
+  <div class="count">
+    <div class="days num" id="cd-days">--</div>
+    <div class="rest">
+      <div class="unit">dias</div>
+      <div class="clock num" id="cd-clock">--:--:--</div>
+      <div class="to">até <strong>Vingadores: Doutor Destino</strong><br>estreia no Brasil · 17.12.2026</div>
+    </div>
+  </div>
+  <div class="next" id="next"></div>
+</header>
+
+<footer class="hud-bottom">
+  <div class="stats">
+    <div class="stat"><div class="v num" id="s-watched">0h</div><div class="k">assistidas</div></div>
+    <div class="stat"><div class="v num" id="s-left">0h</div><div class="k">faltam</div></div>
+    <div class="stat"><div class="v num" id="s-films">0</div><div class="k" id="s-films-k">filmes pela frente</div></div>
+    <div class="stat pace"><div class="v num" id="s-pace">0</div><div class="k" id="s-pace-k">filmes por dia</div></div>
+  </div>
+  <div class="bar"><div class="track" role="progressbar" aria-label="Progresso da maratona" aria-valuemin="0" aria-valuemax="38" id="bar"><div class="fill" id="bar-fill"></div></div><div class="pct num" id="bar-pct">0 de 38</div></div>
+  <div class="demo">Protótipo: o progresso fica salvo só neste navegador. <button id="reset">Zerar</button></div>
+</footer>
+
+<div id="tag"></div>
+
+<section id="page" role="dialog" aria-modal="true" aria-labelledby="cp-title"></section>
+
+<nav id="list" aria-label="Todos os filmes em ordem cronológica">
+  <header><h2>Ordem cronológica</h2><button class="icon-btn" id="close-list" aria-label="Fechar lista"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <ol id="list-ol"></ol>
+</nav>
+
+<div id="loading">Arrumando a estante…</div>
+
+<script src="data.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const FILMS = window.FILMS, FINALE = window.FINALE;
+const PREMIERE = new Date(FINALE.premiere).getTime();
+const TOTAL_MIN = FILMS.reduce((a, f) => a + f.runtime, 0);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = id => document.getElementById(id);
+const root = document.documentElement;
+
+/* ---------------- state ---------------- */
+const KEY = 'ac-proto-watched';
+let watched;
+try { watched = new Set(JSON.parse(localStorage.getItem(KEY)) ?? [1,2,3,4,5,6,7,8,9]); } catch { watched = new Set([1,2,3,4,5,6,7,8,9]); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...watched])); } catch {} };
+const nextFilm = () => FILMS.find(f => !watched.has(f.n)) ?? null;
+
+/* ---------------- formatting ---------------- */
+const hm = min => { const h = Math.floor(min / 60), m = Math.round(min % 60); return m ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`; };
+const dec = (x, d = 1) => x.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const pad = n => String(n).padStart(2, '0');
+const OFFER_LABEL = { FLATRATE: 'Assinatura', FREE: 'Grátis', ADS: 'Com anúncios', RENT: 'Aluguel', BUY: 'Compra' };
+const SAGA = p => p <= 3 ? 'Saga do Infinito' : 'Saga do Multiverso';
+const ICON = { check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>' };
+
+// a comic sound-effect burst, drawn as SVG (deterministic jitter so it doesn't shimmer between renders)
+function burstSVG({ points = 16, inner = 0.72, fill = '#f7c600', seed = 1 } = {}) {
+  const pts = [];
+  for (let i = 0; i < points * 2; i++) {
+    const a = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
+    const j = 1 + Math.sin(seed * 12.9 + i * 78.2) * 0.07;
+    const r = (i % 2 ? inner : 1) * j;
+    pts.push(`${(50 + Math.cos(a) * 50 * r).toFixed(1)},${(50 + Math.sin(a) * 50 * r).toFixed(1)}`);
+  }
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon points="${pts.join(' ')}" fill="${fill}" stroke="#111" stroke-width="2.4" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
+}
+const ARROW_L = '<svg viewBox="0 0 26 30" aria-hidden="true"><path d="M24 2 L2 15 L24 28 Z" fill="#111"/></svg>';
+const ARROW_R = '<svg viewBox="0 0 26 30" aria-hidden="true"><path d="M2 2 L24 15 L2 28 Z" fill="#111"/></svg>';
+const BACK = '<svg viewBox="0 0 30 18" aria-hidden="true"><path d="M29 9H4M10 2L3 9l7 7" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/* ---------------- HUD ---------------- */
+function countdownParts() {
+  let ms = Math.max(0, PREMIERE - Date.now());
+  const d = Math.floor(ms / 864e5); ms -= d * 864e5;
+  const h = Math.floor(ms / 36e5); ms -= h * 36e5;
+  const m = Math.floor(ms / 6e4); const s = Math.floor((ms - m * 6e4) / 1e3);
+  return { d, h, m, s };
+}
+function tickCountdown() {
+  const c = countdownParts();
+  $('cd-days').textContent = c.d;
+  $('cd-clock').textContent = `${pad(c.h)}:${pad(c.m)}:${pad(c.s)}`;
+  const pb = document.querySelector('#page .days-burst > span'); if (pb) pb.textContent = `${c.d} dias!`;
+  return c;
+}
+
+function renderStats() {
+  const seenMin = FILMS.filter(f => watched.has(f.n)).reduce((a, f) => a + f.runtime, 0);
+  const leftMin = TOTAL_MIN - seenMin;
+  const leftFilms = FILMS.length - watched.size;
+  const days = Math.max((PREMIERE - Date.now()) / 864e5, 0.01);
+  $('s-watched').textContent = hm(seenMin);
+  $('s-left').textContent = hm(leftMin);
+  $('s-films').textContent = leftFilms;
+  $('s-films-k').textContent = leftFilms === 1 ? 'filme pela frente' : 'filmes pela frente';
+  const perDay = leftFilms / days;
+  if (leftFilms === 0) { $('s-pace').textContent = 'Pronto'; $('s-pace-k').textContent = 'para a estreia'; }
+  else if (perDay < 1) { $('s-pace').textContent = `1 a cada ${dec(1 / perDay, 0)}`; $('s-pace-k').textContent = `dias · ${hm(leftMin / days)} por dia`; }
+  else { $('s-pace').textContent = dec(perDay); $('s-pace-k').textContent = `filmes por dia · ${hm(leftMin / days)}`; }
+  $('bar-fill').style.width = (seenMin / TOTAL_MIN * 100) + '%';
+  $('bar-pct').textContent = `${watched.size} de ${FILMS.length}`;
+  $('bar').setAttribute('aria-valuenow', watched.size);
+
+  const nf = nextFilm(), next = $('next');
+  next.classList.toggle('done', !nf);
+  next.innerHTML = nf
+    ? `<img src="${nf.cover}" alt=""><div class="label">Próximo · Nº ${nf.n}</div><div class="t">${nf.title}</div>
+       <div class="actions"><button class="btn btn-ink" data-act="seen">Marcar como visto</button><button class="btn btn-ghost" data-act="open">Abrir o gibi</button></div>`
+    : `<img src="${FINALE.cover}" alt=""><div class="label">Maratona completa</div><div class="t">Você está pronto para o Doutor Destino.</div>
+       <div class="actions"><button class="btn btn-ink" data-act="finale">Ver a última edição</button></div>`;
+
+  document.querySelectorAll('#list-ol li').forEach(li => {
+    const seen = watched.has(+li.dataset.n);
+    li.firstElementChild.classList.toggle('seen', seen);
+    li.firstElementChild.setAttribute('aria-label', `Nº ${li.dataset.n}, ${FILMS[li.dataset.n - 1].title}, ${seen ? 'visto' : 'não visto'}`);
+  });
+}
+
+$('next').addEventListener('click', e => {
+  const act = e.target.closest('[data-act]')?.dataset.act; if (!act) return;
+  const nf = nextFilm();
+  if (act === 'seen' && nf) toggleWatched(nf.n);
+  if (act === 'open' && nf) openDetail(nf.n);
+  if (act === 'finale') openDetail(39);
+});
+$('reset').addEventListener('click', () => { watched = new Set(); save(); syncAll(); });
+
+$('list-ol').innerHTML = FILMS.map(f => `<li data-n="${f.n}"><button><span class="n num">${pad(f.n)}</span><img src="${f.cover}" alt="" loading="lazy"><span class="lt">${f.title}<small>${f.year} · ${hm(f.runtime)}</small></span><span class="ck">${ICON.check}</span></button></li>`).join('');
+$('list-ol').addEventListener('click', e => { const li = e.target.closest('li'); if (li) { closeList(); openDetail(+li.dataset.n); } });
+const openList = () => { $('list').classList.add('open'); $('open-list').setAttribute('aria-expanded', 'true'); };
+const closeList = () => { $('list').classList.remove('open'); $('open-list').setAttribute('aria-expanded', 'false'); };
+$('open-list').addEventListener('click', () => $('list').classList.contains('open') ? closeList() : openList());
+$('close-list').addEventListener('click', closeList);
+
+/* ---------------- the comic page (detail) ---------------- */
+let selected = null;      // film number whose comic is out of the shelf
+let pageShown = false;    // the HTML page has taken over the screen
+let closing = false;
+
+function titleLines(title) {
+  const i = title.indexOf(':');
+  return i > 0 ? [title.slice(0, i + 1), title.slice(i + 1).trim()] : [title, ''];
+}
+function offersHTML(f) {
+  const order = ['FLATRATE', 'FREE', 'ADS', 'RENT', 'BUY'];
+  const groups = Object.entries(f.offers ?? {}).filter(([k]) => OFFER_LABEL[k]).sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+  if (!groups.length) return `<p class="none">Este filme não está em nenhum streaming no Brasil agora.</p>`;
+  let k = 0;
+  return groups.map(([key, list]) => `<div class="grp"><b>${OFFER_LABEL[key]}</b>${
+    list.map(o => `<span class="sticker" style="--r:${[-2, 1.5, -1, 2][k++ % 4]}deg"><img src="${o.icon}" alt="" loading="lazy">${o.name}${o.price ? ` <small>${o.price}</small>` : ''}</span>`).join('')
+  }</div>`).join('');
+}
+function pageHTML(n) {
+  const c = countdownParts();
+  const top = `<div class="cp-top panel">
+      <button class="back" data-act="close">${BACK}<span>Voltar para a estante</span></button>
+      <div class="mast lettering" aria-hidden="true"><span class="a">Avengers</span><span class="b">Countdown</span></div>
+      <div class="burst days-burst lettering">${burstSVG({ points: 13, inner: .62, seed: 3 })}<span>${c.d} dias!</span></div>
+    </div>`;
+  if (n === 39) {
+    const [l1, l2] = titleLines(FINALE.title);
+    return `<div class="cp">${top}
+      <div class="cp-splash panel"><img src="${FINALE.cover}" alt="Capa de ${FINALE.comic}"><div class="issue-box">Nº 39</div>
+        <div class="splash-text"><h2 id="cp-title" class="lettering"><span class="l1">${l1}</span><span class="l2">${l2}</span></h2><p class="en">${FINALE.en}</p></div></div>
+      <div class="cp-col">
+        <div class="caption panel"><span class="phase">A estreia</span><p>A última edição da estante fica lacrada até a estreia nos cinemas, em 17 de dezembro de 2026. Até lá, termine a maratona.</p></div>
+        <div class="ficha panel"><div class="tag"><div class="burst lettering">${burstSVG({ seed: 7 })}<span>Ficha<br>técnica</span></div></div>
+          <dl><div><dt>Estreia</dt><dd class="red">17 de dezembro de 2026</dd></div><div><dt>Gibi na estante</dt><dd>${FINALE.comic}</dd></div><div><dt>Maratona</dt><dd>${watched.size} de ${FILMS.length} filmes vistos</dd></div></dl></div>
+        <div class="action panel halftone-red" style="grid-template-columns:1fr"><div class="finale-count">${c.d} dias<small>${pad(c.h)}h ${pad(c.m)}min até a estreia</small></div></div>
+      </div>
+      <nav class="cp-nav"><button data-go="38">${ARROW_L}<span><small>Edição anterior:</small><strong>${FILMS[37].title}</strong></span></button><button disabled></button></nav>
+    </div>`;
+  }
+  const f = FILMS[n - 1], seen = watched.has(n), prev = FILMS[n - 2], nxt = FILMS[n];
+  const [l1, l2] = titleLines(f.title);
+  return `<div class="cp">${top}
+    <div class="cp-splash panel">
+      <img src="${f.cover}" alt="Capa de ${f.comic}">
+      <div class="issue-box">Nº ${n}</div>
+      <div class="splash-text"><h2 id="cp-title" class="lettering"><span class="l1">${l1}</span>${l2 ? `<span class="l2">${l2}</span>` : ''}</h2><p class="en">${f.en}</p></div>
+    </div>
+    <div class="cp-col">
+      <div class="caption panel"><span class="phase">Fase ${f.phase}</span><p>${f.synopsis}</p></div>
+      <div class="ficha panel">
+        <div class="tag"><div class="burst lettering">${burstSVG({ seed: n })}<span>Ficha<br>técnica</span></div></div>
+        <dl>
+          <div><dt>Ano</dt><dd class="red">${f.year}</dd></div>
+          <div><dt>Duração</dt><dd>${hm(f.runtime)}</dd></div>
+          <div><dt>Fase</dt><dd><span style="color:var(--c-red)">${f.phase}</span> · ${SAGA(f.phase)}</dd></div>
+          <div><dt>Direção</dt><dd>${f.director ?? '—'}</dd></div>
+          <div><dt>Gibi na estante</dt><dd>${f.comic}</dd></div>
+        </dl>
+      </div>
+      <div class="where panel"><h3 class="lettering">Onde assistir no Brasil</h3>${offersHTML(f)}<p class="src">Dados de streaming: JustWatch, 17/10/2026.</p></div>
+      <div class="action panel halftone-red">
+        <div>
+          <button class="pow burst lettering ${seen ? 'seen' : ''}" data-act="toggle" aria-pressed="${seen}">${burstSVG({ points: 18, inner: .66, seed: n + 2, fill: seen ? '#ffffff' : '#f7c600' })}<span>${seen ? 'Visto!' : 'Marcar como visto!'}</span></button>
+          ${seen ? '<button class="undo" data-act="toggle">Desmarcar</button>' : ''}
+        </div>
+        <div class="balloon"><b><em>${n}</em> de ${FILMS.length}</b><small>na ordem</small></div>
+      </div>
+    </div>
+    <nav class="cp-nav">
+      <button data-go="${n - 1}" ${prev ? '' : 'disabled'}>${ARROW_L}<span><small>Edição anterior:</small><strong>${prev?.title ?? ''}</strong></span></button>
+      <button data-go="${n + 1}">${nxt ? `<span><small>Próxima edição:</small><strong>${nxt.title}</strong></span>` : `<span><small>Última edição:</small><strong>${FINALE.title}</strong></span>`}${ARROW_R}</button>
+    </nav>
+  </div>`;
+}
+
+const insetFor = r => `inset(${Math.max(0, r.t)}px ${Math.max(0, innerWidth - r.r)}px ${Math.max(0, innerHeight - r.b)}px ${Math.max(0, r.l)}px round 6px)`;
+
+function showPage(n, rect) {
+  const p = $('page');
+  p.innerHTML = pageHTML(n);
+  p.scrollTop = 0;
+  p.style.transition = 'none';
+  p.style.clipPath = insetFor(rect);
+  p.classList.add('open');
+  root.classList.add('page-open');
+  p.getBoundingClientRect();
+  p.style.transition = reduceMotion ? 'none' : 'clip-path .6s cubic-bezier(.7,0,.2,1)';
+  p.style.clipPath = 'inset(0px 0px 0px 0px round 0px)';
+  p.classList.add('shown');
+  pageShown = true;
+  p.querySelector('[data-act="close"]').focus({ preventScroll: true });
+}
+function openDetail(n) {
+  if (closing) return;
+  closeList();
+  if (pageShown) { goTo(n); return; }
+  selected = n; root.classList.add('page-busy');
+  if (n === 39 || !items.length) showPage(n, finaleRect());
+}
+function goTo(n) {
+  // already reading: swap the issue in place; the 3D comic behind the page follows without being seen
+  const old = items[selected - 1];
+  if (old) { old.sel = 0; old.open = 0; old.g.position.copy(old.home); old.coverPivot.rotation.y = 0; }
+  selected = n;
+  const it = items[n - 1];
+  if (it) { it.sel = 1; it.open = 1; }
+  $('page').innerHTML = pageHTML(n);
+  $('page').scrollTop = 0;
+  $('page').querySelector('[data-act="close"]').focus({ preventScroll: true });
+}
+function closeDetail() {
+  if (!pageShown || closing) return;
+  closing = true;
+  const it = items[selected - 1];
+  const rect = it ? spreadRect(it) : finaleRect();
+  const p = $('page');
+  p.classList.remove('shown');
+  p.style.transition = reduceMotion ? 'none' : 'clip-path .45s cubic-bezier(.7,0,.2,1)';
+  p.style.clipPath = insetFor(rect);
+  setTimeout(() => {
+    p.classList.remove('open'); root.classList.remove('page-open', 'page-busy');
+    if (it && it.watched && it.markedHere) it.stampPop = 1;
+    if (it) it.markedHere = false;
+    pageShown = false; selected = null; closing = false;
+  }, reduceMotion ? 0 : 460);
+}
+$('page').addEventListener('click', e => {
+  const t = e.target.closest('[data-act],[data-go]'); if (!t) return;
+  if (t.dataset.act === 'close') closeDetail();
+  if (t.dataset.act === 'toggle') {
+    toggleWatched(selected);
+    const it = items[selected - 1]; if (it) it.markedHere = true;
+    const y = $('page').scrollTop; $('page').innerHTML = pageHTML(selected); $('page').scrollTop = y;
+    $('page').querySelector('.pow').focus({ preventScroll: true });
+  }
+  if (t.dataset.go) goTo(+t.dataset.go);
+});
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (pageShown) closeDetail(); else closeList(); }
+  if (!pageShown) return;
+  if (e.key === 'ArrowRight' && selected < 39) goTo(selected + 1);
+  if (e.key === 'ArrowLeft' && selected > 1) goTo(selected - 1);
+});
+
+function toggleWatched(n) {
+  watched.has(n) ? watched.delete(n) : watched.add(n);
+  save(); syncAll();
+  const it = items[n - 1]; if (it && watched.has(n) && !pageShown) it.stampPop = 1;
+}
+function syncAll() { renderStats(); items.forEach(it => it.watched = watched.has(it.n)); if (items.length) updateNextLabel(); }
+
+/* ---------------- three.js shelf ---------------- */
+const canvas = $('scene');
+let renderer;
+const items = [];
+let finale = null;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); }
+catch { root.classList.add('no-webgl'); $('loading').classList.add('gone'); renderStats(); throw new Error('WebGL indisponível'); }
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x121318);
+scene.fog = new THREE.Fog(0x121318, 14, 26);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.35;
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+scene.add(new THREE.HemisphereLight(0xfff1dd, 0x101018, 0.6));
+const key = new THREE.DirectionalLight(0xffe9cc, 2.8);
+key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0004; key.shadow.radius = 4;
+Object.assign(key.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 0.5, far: 30 }); key.shadow.camera.updateProjectionMatrix();
+scene.add(key, key.target);
+const rim = new THREE.DirectionalLight(0x9fb4ff, 0.35); rim.position.set(6, -2, 4); scene.add(rim);
+
+const W = 1, H = 1.52, T = 0.022, CT = 0.006, GX = 0.36, RH = H + 0.62;
+const wallMat = new THREE.MeshStandardMaterial({ color: 0x17181f, roughness: 0.92 });
+const ledgeMat = new THREE.MeshPhysicalMaterial({ color: 0xb3141c, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.18 });
+const paperMat = new THREE.MeshStandardMaterial({ color: 0xe9e1d2, roughness: 0.85 });
+const bagMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.16, roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.05, depthWrite: false, envMapIntensity: 2.4 });
+
+function shadedMaterial(tex, roughness = 0.62) {
+  const m = new THREE.MeshStandardMaterial({ map: tex, roughness });
+  m.userData.u = { uSat: { value: 0.12 }, uBright: { value: 0.42 } };
+  m.onBeforeCompile = s => {
+    Object.assign(s.uniforms, m.userData.u);
+    s.fragmentShader = 'uniform float uSat; uniform float uBright;\n' + s.fragmentShader.replace('#include <map_fragment>',
+      '#include <map_fragment>\n float gL = dot(diffuseColor.rgb, vec3(.299,.587,.114));\n diffuseColor.rgb = mix(vec3(gL), diffuseColor.rgb, uSat) * uBright;');
+  };
+  return m;
+}
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); draw(g, w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  t.userData.redraw = fn => { g.clearRect(0, 0, w, h); fn(g, w, h); t.needsUpdate = true; };
+  return t;
+}
+function stampTexture() {
+  return canvasTex(512, 240, (g, w, h) => {
+    g.translate(w / 2, h / 2); g.rotate(-0.12);
+    g.strokeStyle = '#e2231a'; g.lineWidth = 14; g.lineJoin = 'round'; g.strokeRect(-210, -82, 420, 164);
+    g.lineWidth = 4; g.strokeRect(-194, -66, 388, 132);
+    g.fillStyle = '#e2231a'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = '900 112px Archivo'; g.fillText('VISTO!', 0, 8);
+    g.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 260; i++) { g.beginPath(); g.arc((Math.random() - .5) * 440, (Math.random() - .5) * 180, Math.random() * 3.2, 0, 7); g.fill(); }
+  });
+}
+// the first inside page: the same panel layout the detail screen opens into
+function innerPageTexture() {
+  return canvasTex(640, 973, (g, w, h) => {
+    g.fillStyle = '#efe3c8'; g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(120,84,30,.10)';
+    for (let y = 0; y < h; y += 6) for (let x = (y / 6) % 2 * 3; x < w; x += 6) g.fillRect(x, y, 1.6, 1.6);
+    const m = 22, gap = 16, ink = '#111';
+    const panel = (x, y, pw, ph, fill) => { g.fillStyle = fill; g.fillRect(x, y, pw, ph); g.lineWidth = 7; g.strokeStyle = ink; g.strokeRect(x, y, pw, ph); };
+    const lines = (x, y, pw, n, col = 'rgba(17,17,17,.55)') => { g.fillStyle = col; for (let i = 0; i < n; i++) g.fillRect(x, y + i * 26, pw * (i === n - 1 ? .6 : 1), 9); };
+    let y = m;
+    panel(m, y, w - 2 * m, 200, '#f7c600'); lines(m + 26, y + 36, w - 2 * m - 52, 6); y += 200 + gap;
+    panel(m, y, w - 2 * m, 250, '#fbf4e4');
+    g.save(); g.translate(m + 100, y + 125); g.beginPath();
+    for (let i = 0; i < 32; i++) { const a = i / 32 * Math.PI * 2, r = i % 2 ? 50 : 82; g.lineTo(Math.cos(a) * r, Math.sin(a) * r * .8); }
+    g.closePath(); g.fillStyle = '#f7c600'; g.fill(); g.lineWidth = 4; g.stroke(); g.restore();
+    for (let i = 0; i < 5; i++) { g.fillStyle = i % 2 ? '#1d5fb4' : '#e2231a'; g.fillRect(m + 210, y + 30 + i * 44, 300 - i * 30, 14); g.fillStyle = 'rgba(17,17,17,.7)'; g.fillRect(m + 210, y + 58 + i * 44, w - 2 * m - 232, 3); }
+    y += 250 + gap;
+    panel(m, y, w - 2 * m, 170, '#ffffff');
+    for (let i = 0; i < 3; i++) { g.fillStyle = '#fff'; g.lineWidth = 5; g.strokeRect(m + 30 + i * 170, y + 70, 150, 54); g.fillStyle = ['#0b2a4a', '#e50914', '#1a1a1a'][i]; g.fillRect(m + 38 + i * 170, y + 78, 38, 38); }
+    g.fillStyle = '#111'; g.fillRect(m + 30, y + 28, 300, 18); y += 170 + gap;
+    const ah = h - y - m - 110 - gap;
+    panel(m, y, w - 2 * m, ah, '#e2231a');
+    g.fillStyle = 'rgba(0,0,0,.22)'; for (let yy = y + 6; yy < y + ah; yy += 10) for (let x = m + 6 + (yy / 10 % 2) * 5; x < w - m; x += 10) { g.beginPath(); g.arc(x, yy, 2.6, 0, 7); g.fill(); }
+    g.save(); g.translate(w * 0.38, y + ah / 2); g.beginPath();
+    for (let i = 0; i < 36; i++) { const a = i / 36 * Math.PI * 2, r = i % 2 ? 70 : 110; g.lineTo(Math.cos(a) * r * 1.5, Math.sin(a) * r * .6); }
+    g.closePath(); g.fillStyle = '#f7c600'; g.fill(); g.lineWidth = 5; g.strokeStyle = ink; g.stroke(); g.restore();
+    g.beginPath(); g.ellipse(w - m - 100, y + ah / 2, 70, 46, 0, 0, 7); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 5; g.stroke();
+    y += ah + gap;
+    panel(m, y, (w - 2 * m - gap) / 2, 110, '#f7c600'); panel(m + (w - 2 * m + gap) / 2, y, (w - 2 * m - gap) / 2, 110, '#f7c600');
+  });
+}
+function ledgeLabelDraw(f, isNext) {
+  return (g, w, h) => {
+    if (isNext) { g.fillStyle = '#f2c200'; g.fillRect(0, 0, w, h); }
+    g.fillStyle = isNext ? '#121318' : '#f6ece0'; g.textBaseline = 'middle';
+    g.font = '900 52px Archivo'; g.textAlign = 'left'; g.fillText('Nº ' + f.n, 18, h / 2 + 2);
+    g.font = '700 44px Archivo'; g.textAlign = 'right'; g.fillText(hm(f.runtime), w - 18, h / 2 + 2);
+  };
+}
+
+const loader = new THREE.TextureLoader();
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+const loadTex = url => new Promise(res => loader.load(url, t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso; res(t); }, undefined, () => res(null)));
+
+const shelf = new THREE.Group(); scene.add(shelf);
+const pagesGeo = new THREE.BoxGeometry(W * 0.99, H * 0.99, T);
+const coverGeo = new THREE.BoxGeometry(W, H, CT).translate(W / 2, 0, 0);  // hinge on the left edge (the spine)
+const bagGeo = new THREE.PlaneGeometry(W * 1.08, H * 1.05);
+const stampGeo = new THREE.PlaneGeometry(W * 0.66, W * 0.31);
+const labelGeo = new THREE.PlaneGeometry(W * 0.92, W * 0.17);
+
+async function build() {
+  await document.fonts.load('900 40px Archivo').catch(() => {});
+  const texes = await Promise.all([...FILMS.map(f => loadTex(f.cover)), loadTex(FINALE.cover)]);
+  const stampTex = stampTexture();
+  const innerMat = new THREE.MeshStandardMaterial({ map: innerPageTexture(), roughness: 0.9 });
+  FILMS.forEach((f, i) => {
+    const front = shadedMaterial(texes[i]);
+    const inside = new THREE.MeshStandardMaterial({ map: texes[i], roughness: 0.75 }); // the splash: seen when the cover swings open
+    const g = new THREE.Group();
+    const pages = new THREE.Mesh(pagesGeo, [paperMat, paperMat, paperMat, paperMat, innerMat, paperMat]);
+    pages.castShadow = true; pages.receiveShadow = true; pages.userData.n = f.n;
+    const coverPivot = new THREE.Group(); coverPivot.position.set(-W / 2, 0, T / 2 + CT / 2 + 0.001);
+    const cover = new THREE.Mesh(coverGeo, [paperMat, paperMat, paperMat, paperMat, front, inside]);
+    cover.castShadow = true; cover.userData.n = f.n;
+    const stamp = new THREE.Mesh(stampGeo, new THREE.MeshBasicMaterial({ map: stampTex, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+    stamp.position.set(W / 2 + W * 0.12, -H * 0.3, CT / 2 + 0.002); stamp.rotation.z = 0.18;
+    cover.add(stamp); coverPivot.add(cover);
+    const bag = new THREE.Mesh(bagGeo, bagMat.clone()); bag.position.z = T / 2 + CT + 0.016; bag.renderOrder = 2;
+    g.add(pages, coverPivot, bag); shelf.add(g);
+    const label = new THREE.Mesh(labelGeo, new THREE.MeshBasicMaterial({ map: canvasTex(512, 96, ledgeLabelDraw(f, false)), transparent: true, toneMapped: false }));
+    shelf.add(label);
+    const seen = watched.has(f.n);
+    items.push({ n: f.n, f, g, pages, cover, coverPivot, bag, stamp, front, label, watched: seen,
+      sat: seen ? 1 : 0, bagOff: seen ? 1 : 0, stampPop: 0, hover: 0, sel: 0, open: 0, isNext: false, home: new THREE.Vector3() });
+  });
+  // the premiere: a graded slab at the end of the shelf
+  const fg = new THREE.Group();
+  const caseMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 1, thickness: 0.12, roughness: 0.06, ior: 1.45, clearcoat: 1 });
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(W * 1.22, H * 1.36, 0.1), caseMat); slab.castShadow = true; slab.userData.n = 39;
+  const inner = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshStandardMaterial({ map: texes[38], roughness: 0.5 }));
+  inner.position.set(0, -H * 0.08, 0); inner.userData.n = 39;
+  const labelTex = canvasTex(600, 230, () => {});
+  const lab = new THREE.Mesh(new THREE.PlaneGeometry(W * 1.12, W * 1.12 * 230 / 600), new THREE.MeshBasicMaterial({ map: labelTex, toneMapped: false }));
+  lab.position.set(0, H * 0.55, 0.02); lab.userData.n = 39;
+  const glow = new THREE.PointLight(0xffd9a0, 6, 3.2, 1.6); glow.position.set(0, 0.2, 0.9);
+  fg.add(slab, inner, lab, glow); fg.scale.setScalar(1.12); shelf.add(fg);
+  finale = { g: fg, labelTex, hit: [slab, inner, lab], hover: 0, home: new THREE.Vector3() };
+  drawFinaleLabel();
+  layout();
+  syncAll();
+  $('loading').classList.add('gone');
+}
+
+function drawFinaleLabel() {
+  if (!finale) return;
+  const c = countdownParts();
+  finale.labelTex.userData.redraw((g, w, h) => {
+    g.fillStyle = '#e2231a'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#f2c200'; g.fillRect(0, 0, w, 44);
+    g.fillStyle = '#121318'; g.font = '800 26px Archivo'; g.textBaseline = 'middle'; g.fillText('ESTREIA · 17.12.2026 · Nº 39', 18, 23);
+    g.fillStyle = '#fff'; g.font = '900 96px Archivo'; g.textBaseline = 'alphabetic'; g.fillText(String(c.d), 18, 150);
+    const dw = g.measureText(String(c.d)).width;
+    g.font = '800 34px Archivo'; g.fillText('DIAS', 30 + dw, 110); g.fillText(`${pad(c.h)}:${pad(c.m)}:${pad(c.s)}`, 30 + dw, 150);
+    g.font = '700 22px Archivo'; g.fillText('VINGADORES: DOUTOR DESTINO', 18, 200);
+  });
+}
+
+/* layout & camera */
+let cols = 8, rows = 1, shelfW = 1, pxPerWorld = 100, camZ = 10, camBaseY = 0, scrollRangeWorld = 0;
+let wall, ledges = [];
+function layout() {
+  const w = innerWidth, h = innerHeight;
+  cols = w < 560 ? 3 : w < 900 ? 5 : w < 1300 ? 7 : 8;
+  rows = Math.ceil((FILMS.length + 2) / cols);
+  shelfW = cols * W + (cols - 1) * GX;
+  ledges.forEach(l => shelf.remove(l)); ledges = [];
+  if (wall) shelf.remove(wall);
+  wall = new THREE.Mesh(new THREE.PlaneGeometry(shelfW + 30, rows * RH + 30), wallMat);
+  wall.position.set(0, -(rows - 1) * RH / 2, -0.32); wall.receiveShadow = true; shelf.add(wall);
+  for (let r = 0; r < rows; r++) {
+    const y = -r * RH - H / 2 - 0.05;
+    const ledge = new THREE.Mesh(new THREE.BoxGeometry(shelfW + 0.7, 0.07, 0.62), ledgeMat);
+    ledge.position.set(0, y, -0.02); ledge.castShadow = true; ledge.receiveShadow = true;
+    const lip = new THREE.Mesh(new THREE.BoxGeometry(shelfW + 0.7, 0.2, 0.05), ledgeMat);
+    lip.position.set(0, y + 0.065, 0.3); lip.castShadow = true;
+    shelf.add(ledge, lip); ledges.push(ledge, lip);
+  }
+  const x0 = -shelfW / 2 + W / 2;
+  items.forEach((it, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    it.home.set(x0 + c * (W + GX), -r * RH + 0.02, 0.06);
+    it.label.position.set(it.home.x, -r * RH - H / 2 + 0.017, 0.33);
+  });
+  let fc = FILMS.length % cols, fr = Math.floor(FILMS.length / cols);
+  if (fc === cols - 1) { fc = 0; fr++; }
+  finale.home.set(x0 + fc * (W + GX) + (W + GX) / 2, -fr * RH + 0.2, 0.1);
+
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  const vFov = THREE.MathUtils.degToRad(camera.fov);
+  camZ = ((shelfW + (w < 560 ? 0.5 : 1.4)) / 2) / (Math.tan(vFov / 2) * camera.aspect);
+  pxPerWorld = h / (2 * Math.tan(vFov / 2) * camZ);
+  const hudTop = document.querySelector('.hud-top').getBoundingClientRect().height;
+  const hudBot = document.querySelector('.hud-bottom').getBoundingClientRect().height;
+  const firstTop = H / 2 + 0.3, lastBottom = -(rows - 1) * RH - H / 2 - 0.35;
+  camBaseY = firstTop - (h / 2 - hudTop - 8) / pxPerWorld;
+  scrollRangeWorld = Math.max(0, camBaseY - (lastBottom + (h / 2 - hudBot - 8) / pxPerWorld));
+  $('track').style.height = (h + scrollRangeWorld * pxPerWorld + 40) + 'px';
+  renderer.setSize(w, h, false);
+  updateNextLabel(true);
+}
+
+let lastNext;
+function updateNextLabel(force) {
+  const nf = nextFilm()?.n ?? null;
+  if (!force && nf === lastNext) return;
+  lastNext = nf;
+  items.forEach(it => { it.isNext = it.n === nf; it.label.material.map.userData.redraw(ledgeLabelDraw(it.f, it.isNext)); });
+}
+
+/* screen rect of things, for the page hand-off */
+const _v = new THREE.Vector3();
+function rectOf(points, obj) {
+  obj.updateMatrixWorld(true);
+  let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+  for (const [x, y, z] of points) {
+    _v.set(x, y, z); obj.localToWorld(_v); _v.project(camera);
+    const px = (_v.x + 1) / 2 * innerWidth, py = (1 - _v.y) / 2 * innerHeight;
+    l = Math.min(l, px); r = Math.max(r, px); t = Math.min(t, py); b = Math.max(b, py);
+  }
+  return { l, t, r, b };
+}
+const spreadRect = it => rectOf([[-1.5 * W, -H / 2, T / 2], [-1.5 * W, H / 2, T / 2], [0.5 * W, -H / 2, T / 2], [0.5 * W, H / 2, T / 2]], it.g);
+function finaleRect() {
+  if (!finale) return { l: innerWidth / 2 - 40, r: innerWidth / 2 + 40, t: innerHeight / 2 - 60, b: innerHeight / 2 + 60 };
+  return rectOf([[-W * .61, -H * .68, 0], [-W * .61, H * .68, 0], [W * .61, -H * .68, 0], [W * .61, H * .68, 0]], finale.g);
+}
+
+/* interaction */
+const ray = new THREE.Raycaster(), pointer = new THREE.Vector2(9, 9);
+let hovered = null, pointerPx = { x: 0, y: 0 };
+const overUI = e => e.target.closest?.('.hud-top > *, .stats, .bar, .demo, #page, #list');
+addEventListener('pointermove', e => {
+  if (overUI(e)) { pointer.set(9, 9); return; }
+  pointer.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  pointerPx = { x: e.clientX, y: e.clientY };
+});
+document.addEventListener('pointerleave', () => pointer.set(9, 9));
+addEventListener('click', e => {
+  if (overUI(e) || e.target.closest('button') || selected !== null) return;
+  pointer.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  pointerPx = { x: e.clientX, y: e.clientY };
+  pick();
+  if (hovered) openDetail(hovered);
+  if (e.pointerType !== 'mouse') pointer.set(9, 9);
+});
+function pick() {
+  ray.setFromCamera(pointer, camera);
+  const targets = items.flatMap(i => [i.cover, i.pages]).concat(finale ? finale.hit : []);
+  const n = ray.intersectObjects(targets, false)[0]?.object.userData.n ?? null;
+  if (n !== hovered) { hovered = n; document.body.style.cursor = n && selected === null ? 'pointer' : ''; }
+  const tag = $('tag');
+  if (n && selected === null) {
+    const f = n === 39 ? FINALE : FILMS[n - 1];
+    tag.innerHTML = `Nº ${n} · ${f.title}<small>${n === 39 ? '17.12.2026' : f.year + ' · ' + hm(f.runtime)}</small>`;
+    tag.style.left = pointerPx.x + 'px'; tag.style.top = pointerPx.y + 'px'; tag.classList.add('on');
+  } else tag.classList.remove('on');
+}
+
+/* animation */
+const clock = new THREE.Clock();
+const tmpV = new THREE.Vector3(), tmpDir = new THREE.Vector3();
+let camX = 0, camYOff = 0, frame = 0, simT = 0, holdHandoff = false;
+const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
+const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+function loop() { update(Math.min(clock.getDelta(), 0.1)); requestAnimationFrame(loop); }
+function update(dt) {
+  simT += dt; const t = simT;
+  const sp = reduceMotion ? 60 : 9;
+  const sy = scrollY / pxPerWorld;
+  const px = pointer.x < 2 && selected === null ? pointer.x : 0, py = pointer.y < 2 && selected === null ? pointer.y : 0;
+  camX = damp(camX, reduceMotion ? 0 : px * 0.35, 3, dt);
+  camYOff = damp(camYOff, reduceMotion ? 0 : py * 0.2, 3, dt);
+  camera.position.set(camX, camBaseY - sy + camYOff, camZ);
+  camera.lookAt(camX * 0.4, camBaseY - sy, 0);
+  key.position.set(camera.position.x - 4, camera.position.y + 7, 9); key.target.position.set(0, camera.position.y - 1, 0);
+  if (++frame % 2 === 0) pick();
+
+  // where an open comic sits: centered in front of the camera, sized so the two-page spread nearly fills the screen
+  const dist = camZ * 0.42;
+  camera.getWorldDirection(tmpDir);
+  const stage = camera.position.clone().addScaledVector(tmpDir, dist);
+  const visH = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * dist, visW = visH * camera.aspect;
+  const fit = Math.min(0.9 * visW / (2 * W), 0.78 * visH / H);
+
+  items.forEach(it => {
+    const isSel = selected === it.n;
+    const k = reduceMotion ? 40 : 1;
+    it.open = damp(it.open, isSel && it.sel > 0.86 ? 1 : 0, 4.2 * k, dt);
+    it.sel = damp(it.sel, isSel || it.open > 0.06 ? 1 : 0, 5.5 * k, dt);
+    it.hover = damp(it.hover, hovered === it.n && selected === null ? 1 : 0, 12, dt);
+    it.sat = damp(it.sat, it.watched ? 1 : 0, 4, dt);
+    it.bagOff = damp(it.bagOff, it.watched || isSel ? 1 : 0, 3.2 * k, dt);
+    it.stampPop = damp(it.stampPop, 0, 5, dt);
+    const busy = selected !== null && !isSel ? 0.5 : 1;
+    const nextLift = it.isNext && !it.watched ? 1 : 0;
+    const lit = Math.max(it.sat, nextLift * 0.75, it.sel);
+    it.front.userData.u.uSat.value = 0.1 + Math.max(it.sat, nextLift * 0.55, it.sel) * 0.9;
+    it.front.userData.u.uBright.value = (0.46 + lit * 0.54 + it.hover * 0.14) * busy;
+    it.bag.material.opacity = 0.16 * (1 - it.bagOff);
+    it.bag.position.y = it.bagOff * H * 1.15;
+    it.bag.visible = it.bagOff < 0.98;
+    it.stamp.material.opacity = it.sat > 0.5 ? Math.min(1, (it.sat - 0.5) * 2) * 0.92 : 0;
+    it.stamp.scale.setScalar(1 + it.stampPop * 0.9);
+
+    // shelf pose: leaning back; the next one pulled forward and breathing
+    const bob = it.isNext && !reduceMotion ? Math.sin(t * 2) * 0.03 : 0;
+    tmpV.copy(it.home);
+    tmpV.z += it.hover * 0.22 + (it.isNext ? 0.28 : 0);
+    tmpV.y += it.hover * 0.08 + (it.isNext ? 0.06 + bob : 0);
+    let rx = -0.13 + it.hover * 0.1 + (it.isNext ? 0.08 : 0), ry = 0, s = 1;
+    if (it.sel > 0.001) {
+      const o = ease(Math.min(1, it.open));
+      const target = stage.clone(); target.x += (W / 2) * fit * o;   // keep the opening spread centered
+      tmpV.lerp(target, it.sel);
+      rx = THREE.MathUtils.lerp(rx, 0, it.sel);
+      ry = -0.35 * it.sel * (1 - o);                                   // turns toward you on the way, flattens as it opens
+      s = THREE.MathUtils.lerp(1, fit, it.sel);
+    }
+    const posK = 1 - Math.exp(-(it.sel > 0.001 ? 14 : sp) * dt);
+    it.g.position.lerp(tmpV, posK);
+    it.g.rotation.x = damp(it.g.rotation.x, rx, sp, dt);
+    it.g.rotation.y = damp(it.g.rotation.y, ry, sp, dt);
+    it.g.scale.setScalar(damp(it.g.scale.x, s, 14, dt));
+    it.coverPivot.rotation.y = -Math.PI * 0.995 * ease(Math.min(1, it.open));
+    it.g.renderOrder = it.sel > 0.01 ? 10 : 0;
+
+    // hand-off: once the spread lies flat, the page grows out of it
+    if (isSel && !pageShown && !closing && !holdHandoff && it.open > 0.94 && Math.abs(it.g.scale.x - fit) < 0.05) showPage(it.n, spreadRect(it));
+  });
+  if (finale) {
+    finale.hover = damp(finale.hover, hovered === 39 && selected === null ? 1 : 0, 12, dt);
+    tmpV.copy(finale.home); tmpV.z += finale.hover * 0.2;
+    finale.g.position.lerp(tmpV, 1 - Math.exp(-sp * dt));
+    finale.g.rotation.x = damp(finale.g.rotation.x, -0.08 + finale.hover * 0.06, sp, dt);
+  }
+  if (!pageShown || closing) renderer.render(scene, camera);   // the page covers the canvas while reading
+}
+
+setInterval(() => { tickCountdown(); drawFinaleLabel(); }, 1000);
+tickCountdown();
+let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(layout, 80); });
+renderStats();
+// protótipo: inspeção (settle avança a animação sem depender do requestAnimationFrame)
+window.__ac = { renderer, scene, camera, settle: (n = 90) => { for (let i = 0; i < n; i++) update(1 / 30); }, open: n => openDetail(n), close: () => closeDetail(), hold: v => { holdHandoff = v; } };
+build().then(() => { update(0.016); requestAnimationFrame(loop); });
+</script>
+</body>
+</html>
