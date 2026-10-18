@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- comic covers and provider logos are small fixed assets */
 import type { Film, Finale, Offer, OfferKind } from '@/lib/types';
-import { countdownParts, hm, pad, saga } from '@/lib/format';
+import { countdownParts, hm, longDate, pad, saga } from '@/lib/format';
 import { ArrowLeft, ArrowRight, BackArrow, Burst } from './Burst';
 
 const OFFER_LABEL: Record<OfferKind, string> = { flatrate: 'Assinatura', free: 'Grátis', ads: 'Com anúncios', rent: 'Aluguel', buy: 'Compra' };
@@ -80,7 +80,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
           <div className="ficha panel">
             <div className="tag"><div className="burst lettering"><Burst seed={7} /><span>Ficha<br />técnica</span></div></div>
             <dl>
-              <div><dt>Estreia</dt><dd className="red">17 de dezembro de 2026</dd></div>
+              <div><dt>Estreia</dt><dd className="red">{longDate(finale.premiereAt)}</dd></div>
               <div><dt>Gibi na estante</dt><dd>{finale.comic}</dd></div>
               <div><dt>Maratona</dt><dd>{seenCount} de {films.length} filmes vistos</dd></div>
             </dl>
@@ -90,6 +90,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
               {released ? 'Em cartaz' : c ? `${c.d} dias` : '…'}
               <small>{released ? (sinceDays ? `estreou há ${sinceDays} ${sinceDays === 1 ? 'dia' : 'dias'}` : 'estreou hoje') : c ? `${pad(c.h)}h ${pad(c.m)}min até a estreia` : ''}</small>
             </div>
+            {finale.ticketsUrl && <a className="cp-tickets" href={finale.ticketsUrl} target="_blank" rel="noopener">Comprar ingresso</a>}
           </div>
         </div>
         <nav className="cp-nav" aria-label="Edições">

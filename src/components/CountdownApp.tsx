@@ -2,8 +2,8 @@
 /* eslint-disable @next/next/no-img-element -- small cover thumbnails in the HUD and list */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import type { Catalog } from '@/lib/types';
-import { countdownParts, dec, filmPath, hm, pad, thumb } from '@/lib/format';
+import type { Catalog, Extra, Film } from '@/lib/types';
+import { countdownParts, dec, dotDate, extraPath, filmPath, hm, pad, progressCode, thumb } from '@/lib/format';
 import type { Rect, ShelfScene } from './shelf/ShelfScene';
 import { ComicPage, Offers } from './ComicPage';
 import { Check, Close } from './Burst';
@@ -18,12 +18,15 @@ const insetFor = (r: Rect) =>
 
 type Tab = 'films' | 'series' | 'xmen';
 
-export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; initialN?: number | null }) {
+type Toast = { id: number; text: string; undo?: () => void };
+
+export function CountdownApp({ catalog, initialN = null, initialExtra = null }: { catalog: Catalog; initialN?: number | null; initialExtra?: number | null }) {
   const { films, finale, extras } = catalog;
   const total = useMemo(() => films.reduce((a, f) => a + f.runtime, 0), [films]);
   const items = useMemo(() => [...films.map(f => ({ id: f.id, n: f.n })), ...extras.map(x => ({ id: x.id, n: x.key }))], [films, extras]);
   const progress = useProgress(items);
-  const { watched } = progress;
+  const { watched, toggle: flip, reset, restore } = progress;
+  const startExtra = extras.find(x => x.id === initialExtra) ?? null;
 
   // the clock only exists in the browser; the prerendered shell shows placeholders
   const now = useSyncExternalStore(subscribeClock, clockSnapshot, () => null);
@@ -31,9 +34,10 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
   const [tag, setTag] = useState<{ n: number; x: number; y: number } | null>(null);
   const [phase, setPhase] = useState<Phase>('closed');
   const [pageN, setPageN] = useState<number | null>(null);
-  const [listOpen, setListOpen] = useState(false);
-  const [tab, setTab] = useState<Tab>('films');
-  const [openExtra, setOpenExtra] = useState<number | null>(null);
+  const [listOpen, setListOpen] = useState(startExtra !== null);
+  const [tab, setTab] = useState<Tab>(startExtra?.kind ?? 'films');
+  const [openExtra, setOpenExtra] = useState<number | null>(startExtra?.id ?? null);
+  const [toast, setToast] = useState<Toast | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [noWebgl, setNoWebgl] = useState(false);
   const [ready, setReady] = useState(false);
@@ -49,6 +53,25 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
   const go = useCallback((p: Phase) => { phaseRef.current = p; setPhase(p); }, []);
   const openDetailRef = useRef<(n: number) => void>(() => {});
   const initialDone = useRef(false);
+  // focus goes back where it came from when a panel closes
+  const returnFocus = useRef<HTMLElement | null>(null);
+  const listBtnRef = useRef<HTMLButtonElement>(null);
+  const listCloseRef = useRef<HTMLButtonElement>(null);
+  const authBtnRef = useRef<HTMLButtonElement>(null);
+  const titled = useRef(false);
+
+  const showToast = useCallback((text: string, undo?: () => void) => setToast({ id: Date.now(), text, undo }), []);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 6000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  /* offline and installable: the service worker only runs in production builds */
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production' || !('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).catch(() => { /* the site works without it */ });
+  }, []);
 
   const nextFilm = films.find(f => !watched.has(f.n)) ?? null;
 
@@ -102,6 +125,8 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
     }
     if (p !== 'closed') return;
     if (!fromHistory && location.pathname !== pathOf(n)) history.pushState({ ac: 1 }, '', pathOf(n));
+    returnFocus.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
+    setAuthOpen(false);
     markedInPage.current = false;
     setTag(null);
     go('flying');
@@ -145,6 +170,23 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
     }, reduce ? 0 : 460);
   }, [pageN, go]);
 
+  useEffect(() => {
+    if (phase !== 'closed' || !returnFocus.current) return;
+    const el = returnFocus.current;
+    returnFocus.current = null;
+    el.focus({ preventScroll: true });
+    // opened from the list, which has closed since: land on the button that opens it
+    if (document.activeElement !== el && el.closest('#list')) listBtnRef.current?.focus({ preventScroll: true });
+  }, [phase]);
+
+  const closeList = useCallback(() => {
+    setListOpen(false);
+    if (location.pathname.startsWith('/extra/')) history.replaceState(history.state, '', '/');
+    listBtnRef.current?.focus({ preventScroll: true });
+  }, []);
+  const closeAuth = useCallback(() => { setAuthOpen(false); authBtnRef.current?.focus({ preventScroll: true }); }, []);
+  useEffect(() => { if (listOpen && !startExtra) listCloseRef.current?.focus({ preventScroll: true }); }, [listOpen, startExtra]);
+
   /* deep link on load, and the browser's back/forward buttons */
   const nFromPath = useCallback((path: string) => {
     const m = /^\/filme\/([^/]+)\/?$/.exec(path);
@@ -166,19 +208,22 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
   }, [closeDetail, openDetail, nFromPath]);
   useEffect(() => {
     const t = pageN === null || phase === 'closed' ? null : pageN === finale.n ? finale.title : films[pageN - 1]?.title;
+    // leave the server's title alone (extras, shared progress) until a comic has been opened
+    if (!t && !titled.current) return;
+    titled.current = true;
     document.title = t ? `${t} · Avengers Countdown` : 'Avengers Countdown';
   }, [pageN, phase, films, finale]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { if (phaseRef.current === 'open') closeDetail(); else { setListOpen(false); setAuthOpen(false); } }
+      if (e.key === 'Escape') { if (phaseRef.current === 'open') closeDetail(); else if (authOpen) closeAuth(); else if (listOpen) closeList(); }
       if (phaseRef.current !== 'open' || pageN === null) return;
       if (e.key === 'ArrowRight' && pageN < finale.n) openDetail(pageN + 1);
       if (e.key === 'ArrowLeft' && pageN > 1) openDetail(pageN - 1);
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
-  }, [closeDetail, openDetail, pageN, finale.n]);
+  }, [closeDetail, openDetail, pageN, finale.n, authOpen, listOpen, closeAuth, closeList]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -187,11 +232,37 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
   }, [phase]);
 
   const toggle = useCallback((n: number) => {
-    const becomesSeen = !watched.has(n);
-    void progress.toggle(n);
+    const becomesSeen = flip(n);
     if (phaseRef.current === 'closed') { if (becomesSeen) sceneRef.current?.popStamp(n); }
     else markedInPage.current = becomesSeen;
-  }, [watched, progress]);
+    return becomesSeen;
+  }, [flip]);
+  /** marking from the HUD or the list is one tap, so it gets an undo */
+  const toggleWithUndo = useCallback((t: Film | Extra, n: number) => {
+    const on = toggle(n);
+    showToast(on ? `${t.title}: visto.` : `${t.title}: desmarcado.`, () => toggle(n));
+  }, [toggle, showToast]);
+  const resetWithUndo = useCallback(() => {
+    const before = reset();
+    if (before.watched.size) showToast('Progresso zerado.', () => restore(before));
+  }, [reset, restore, showToast]);
+  const expandExtra = useCallback((x: Extra | null) => {
+    setOpenExtra(x?.id ?? null);
+    history.replaceState(history.state, '', x ? extraPath(x.slug) : '/');
+  }, []);
+
+  /* share: a link whose social card shows which comics are in color */
+  const share = useCallback(async () => {
+    const seen = films.filter(f => watched.has(f.n)).length;
+    const url = `${location.origin}/progresso/${progressCode(watched, films.length)}`;
+    const text = `Já vi ${seen} de ${films.length} filmes da maratona do MCU antes de ${finale.title}.`;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Avengers Countdown', text, url }); } catch { /* the share sheet was dismissed */ }
+      return;
+    }
+    try { await navigator.clipboard.writeText(url); showToast('Link copiado. É só colar onde quiser.'); }
+    catch { showToast(url); }
+  }, [films, watched, finale.title, showToast]);
 
   /* numbers */
   const seenFilms = films.filter(f => watched.has(f.n));
@@ -210,18 +281,20 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
     else { pace = dec(perDay); paceK = `filmes por dia · ${hm(leftMin / days)}`; }
   }
   const tagFilm = tag ? (tag.n === finale.n ? null : films[tag.n - 1]) : null;
+  // while the comic page is up, everything behind it is out of reach for keyboard and screen readers
+  const behind = phase !== 'closed';
 
   return (
     <div className={noWebgl ? 'no-webgl' : undefined}>
       <canvas id="scene" ref={canvasRef} aria-hidden="true" />
       <div id="track" style={{ height: trackH || undefined }} />
 
-      <header className="hud-top" ref={topRef}>
+      <header className="hud-top" ref={topRef} inert={behind}>
         <div className="brand" data-ui>
           <span>Avengers <b>Countdown</b></span>
           <nav style={{ display: 'flex', gap: 6 }}>
-            <button className="chip" onClick={() => setListOpen(o => !o)} aria-controls="list" aria-expanded={listOpen}>Lista</button>
-            <button className="chip" onClick={() => setAuthOpen(o => !o)} aria-expanded={authOpen} aria-controls="auth">
+            <button className="chip" ref={listBtnRef} onClick={() => (listOpen ? closeList() : setListOpen(true))} aria-controls="list" aria-expanded={listOpen}>Lista</button>
+            <button className="chip" ref={authBtnRef} onClick={() => (authOpen ? closeAuth() : setAuthOpen(true))} aria-expanded={authOpen} aria-controls="auth">
               {progress.user ? 'Conta' : 'Entrar'}
             </button>
           </nav>
@@ -232,8 +305,9 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
             <div className="unit">{released && sinceDays === 1 ? 'dia' : 'dias'}</div>
             <div className="clock num">{released ? 'Nos cinemas' : cd ? `${pad(cd.h)}:${pad(cd.m)}:${pad(cd.s)}` : '--:--:--'}</div>
             {released
-              ? <div className="to"><strong>{finale.title}</strong> estreou<br />no Brasil · 17.12.2026</div>
-              : <div className="to">até <strong>{finale.title}</strong><br />estreia no Brasil · 17.12.2026</div>}
+              ? <div className="to"><strong>{finale.title}</strong> estreou<br />no Brasil · {dotDate(finale.premiereAt)}</div>
+              : <div className="to">até <strong>{finale.title}</strong><br />estreia no Brasil · {dotDate(finale.premiereAt)}</div>}
+            {finale.ticketsUrl && <a className="tickets" href={finale.ticketsUrl} target="_blank" rel="noopener">Comprar ingresso</a>}
           </div>
         </div>
         <div className={`next${nextFilm ? '' : ' done'}`} data-ui>
@@ -243,7 +317,7 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
               <div className="label">Próximo · Nº {nextFilm.n}</div>
               <div className="t">{nextFilm.title}</div>
               <div className="actions">
-                <button className="btn btn-ink" onClick={() => toggle(nextFilm.n)}>Marcar como visto</button>
+                <button className="btn btn-ink" onClick={() => toggleWithUndo(nextFilm, nextFilm.n)}>Marcar como visto</button>
                 <button className="btn btn-ghost" onClick={() => openDetail(nextFilm.n)}>Abrir o gibi</button>
               </div>
             </>
@@ -258,7 +332,7 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
         </div>
       </header>
 
-      <footer className="hud-bottom" ref={botRef}>
+      <footer className="hud-bottom" ref={botRef} inert={behind}>
         <div className="stats" data-ui>
           <div className="stat"><div className="v num">{hm(seenMin)}</div><div className="k">assistidas</div></div>
           <div className="stat"><div className="v num">{hm(leftMin)}</div><div className="k">faltam</div></div>
@@ -270,6 +344,7 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
             <div className="fill" style={{ width: `${(seenMin / total) * 100}%` }} />
           </div>
           <div className="pct num">{seenFilms.length} de {films.length}</div>
+          {seenFilms.length > 0 && <button className="chip share" onClick={() => void share()}>Compartilhar</button>}
         </div>
         <div className="demo" data-ui role="status">
           {progress.error
@@ -277,18 +352,18 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
             : progress.user
               ? <span>Progresso salvo na sua conta.</span>
               : <span>Seu progresso fica salvo neste navegador. <button onClick={() => setAuthOpen(true)}>Entre</button> para levar para qualquer aparelho.</span>}
-          {watched.size > 0 && <button onClick={() => { if (confirm('Zerar todo o progresso da maratona?')) void progress.reset(); }}>Zerar</button>}
+          {watched.size > 0 && <button onClick={resetWithUndo}>Zerar</button>}
         </div>
       </footer>
 
       {tag && phase === 'closed' && (
         <div id="tag" className="on" style={{ left: tag.x, top: tag.y }}>
           Nº {tag.n} · {tagFilm ? tagFilm.title : finale.title}
-          <small>{tagFilm ? `${tagFilm.year} · ${hm(tagFilm.runtime)}` : '17.12.2026'}</small>
+          <small>{tagFilm ? `${tagFilm.year} · ${hm(tagFilm.runtime)}` : dotDate(finale.premiereAt)}</small>
         </div>
       )}
 
-      <AuthPanel open={authOpen} onClose={() => setAuthOpen(false)} user={progress.user} signIn={progress.signIn} signOut={progress.signOut} />
+      <AuthPanel open={authOpen} onClose={closeAuth} user={progress.user} signIn={progress.signIn} signOut={progress.signOut} />
 
       <section id="page" ref={pageRef} role="dialog" aria-modal="true" aria-labelledby="cp-title"
         className={phase === 'open' || phase === 'closing' ? `open${phase === 'open' ? ' shown' : ''}` : undefined} data-ui>
@@ -298,10 +373,10 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
         )}
       </section>
 
-      <nav id="list" className={listOpen ? 'open' : undefined} aria-label="Todos os filmes em ordem cronológica" data-ui>
+      <nav id="list" className={listOpen ? 'open' : undefined} aria-label="Todos os filmes em ordem cronológica" data-ui inert={behind || (!listOpen && !noWebgl)}>
         <header>
           <h2>Ordem cronológica</h2>
-          <button className="icon-btn" onClick={() => setListOpen(false)} aria-label="Fechar lista"><Close /></button>
+          <button className="icon-btn" ref={listCloseRef} onClick={closeList} aria-label="Fechar lista"><Close /></button>
         </header>
         <div className="tabs" role="tablist" aria-label="Seções da lista">
           {([['films', 'Maratona', films.length], ['series', 'Séries', extras.filter(x => x.kind === 'series').length], ['xmen', 'X-Men', extras.filter(x => x.kind === 'xmen').length]] as const)
@@ -318,10 +393,10 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
               return (
                 <li key={x.id} className={isOpen ? 'open' : undefined}>
                   <div className="xrow">
-                    <button className="xhead" aria-expanded={isOpen} onClick={() => setOpenExtra(isOpen ? null : x.id)}>
+                    <button className="xhead" aria-expanded={isOpen} onClick={() => expandExtra(isOpen ? null : x)}>
                       <span className="lt">{x.title}<small>{x.year} · {x.runtime ? hm(x.runtime) : x.note}</small></span>
                     </button>
-                    <button className={`xcheck${seen ? ' seen' : ''}`} aria-pressed={seen} aria-label={`${seen ? 'Desmarcar' : 'Marcar como visto'}: ${x.title}`} onClick={() => void toggle(x.key)}>
+                    <button className={`xcheck${seen ? ' seen' : ''}`} aria-pressed={seen} aria-label={`${seen ? 'Desmarcar' : 'Marcar como visto'}: ${x.title}`} onClick={() => toggleWithUndo(x, x.key)}>
                       <span className="ck"><Check /></span>
                     </button>
                   </div>
@@ -356,6 +431,15 @@ export function CountdownApp({ catalog, initialN = null }: { catalog: Catalog; i
           Capas: Marvel Database. Streaming: JustWatch{catalog.tmdb ? ' via TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado por ele' : ''}.
         </p>
       </nav>
+
+      <div className="toast-slot" role="status" aria-live="polite">
+        {toast && !behind && (
+          <div className="toast" key={toast.id}>
+            <span>{toast.text}</span>
+            {toast.undo && <button onClick={() => { toast.undo!(); setToast(null); }}>Desfazer</button>}
+          </div>
+        )}
+      </div>
 
       <div id="loading" className={ready ? 'gone' : undefined}>Arrumando a estante…</div>
     </div>

@@ -29,6 +29,9 @@ Cada um dos 38 filmes aparece como a **capa do gibi original que o inspirou**, n
 - **Conta opcional**: sem login o progresso fica no navegador; com link mágico por e-mail (Supabase Auth) ele vai para a conta e aparece em qualquer aparelho.
 - **Leve no celular**: texturas menores, sem antialias e sem transmissão de luz, resolução limitada e menos quadros quando nada se mexe.
 - Lista em texto acessível, que também serve de alternativa sem WebGL, navegação por teclado (setas e `Esc`) e respeito a `prefers-reduced-motion`.
+- **Compartilhar o progresso**: um link `/progresso/<código>` cuja imagem de compartilhamento mostra a estante de quem enviou, com os gibis vistos em cores.
+- **Instalável e offline**: manifest e service worker; a estante abre sem conexão com a última versão vista.
+- Marcar pelo HUD ou zerar mostra um aviso com **Desfazer**, e o foco fica preso no gibi aberto (o resto da página fica `inert`).
 
 <table>
   <tr>
@@ -68,6 +71,8 @@ No Supabase, em **Authentication → URL Configuration**, deixe o **Site URL** a
 - **Rotas**: `/` e `/filme/[slug]` renderizam o mesmo app. Abrir e fechar um gibi usa `history.pushState`, então o botão voltar fecha o gibi sem recarregar a estante 3D.
 - **Estante**: three.js imperativo em [`ShelfScene.ts`](src/components/shelf/ShelfScene.ts), controlado pelo React por uma API pequena.
 - **Progresso**: `localStorage` para visitantes e a tabela `avengers_watches` (RLS, só as próprias linhas) para quem entrou.
+- **Ingressos**: quando a venda abrir, ponha a URL em `avengers_config` (`premiere.tickets_url`, só `https://`) e o link aparece no HUD e na edição da estreia, sem deploy. A data da estreia sai do mesmo lugar.
+- **SEO**: `sitemap.xml`, `robots.txt`, JSON-LD (`Movie`/`TVSeries`) nas páginas de filme e de extra (`/extra/<slug>`).
 
 ## Estrutura
 

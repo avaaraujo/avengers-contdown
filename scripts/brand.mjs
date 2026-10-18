@@ -20,6 +20,9 @@ const shot = async (file, w, h) => {
 const icon = await shot('icon.html', 512, 512);
 await sharp(icon).toFile('src/app/icon.png');
 await sharp(icon).resize(180, 180).toFile('src/app/apple-icon.png');
+// the web app manifest's icons (src/app/manifest.ts)
+await sharp(icon).resize(192, 192).png({ compressionLevel: 9 }).toFile('public/icon-192.png');
+await sharp(icon).png({ compressionLevel: 9 }).toFile('public/icon-512.png');
 
 // favicon.ico: PNG-compressed entries at 16, 32 and 48 px
 const sizes = [16, 32, 48];

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getCatalog } from '@/lib/catalog';
 import { CountdownApp } from '@/components/CountdownApp';
+import { JsonLd, filmLd, finaleLd } from '@/components/JsonLd';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -13,8 +14,8 @@ export async function generateStaticParams() {
 async function find(slug: string) {
   const catalog = await getCatalog();
   const film = catalog.films.find(f => f.slug === slug);
-  if (film) return { catalog, n: film.n, title: film.title, text: film.synopsis };
-  if (catalog.finale.slug === slug) return { catalog, n: catalog.finale.n, title: catalog.finale.title, text: catalog.finale.synopsis };
+  if (film) return { catalog, n: film.n, title: film.title, text: film.synopsis, ld: filmLd(film) };
+  if (catalog.finale.slug === slug) return { catalog, n: catalog.finale.n, title: catalog.finale.title, text: catalog.finale.synopsis, ld: finaleLd(catalog.finale) };
   return null;
 }
 
@@ -34,5 +35,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function FilmPage({ params }: Props) {
   const hit = await find((await params).slug);
   if (!hit) notFound();
-  return <CountdownApp catalog={hit.catalog} initialN={hit.n} />;
+  return (
+    <>
+      <JsonLd data={hit.ld} />
+      <CountdownApp catalog={hit.catalog} initialN={hit.n} />
+    </>
+  );
 }

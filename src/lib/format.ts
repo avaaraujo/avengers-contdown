@@ -21,3 +21,29 @@ export const thumb = (cover: string) => cover.replace('/covers/', '/covers/sm/')
 
 /** where a film's detail lives; the premiere has its own page too */
 export const filmPath = (slug: string) => `/filme/${slug}`;
+
+/** the premiere is a Brazilian date: format it in Brasília time wherever the code runs */
+const BR = { timeZone: 'America/Sao_Paulo' } as const;
+/** 17.12.2026 */
+export const dotDate = (ms: number) =>
+  new Date(ms).toLocaleDateString('pt-BR', { ...BR, day: '2-digit', month: '2-digit', year: 'numeric' }).replaceAll('/', '.');
+/** 17 de dezembro de 2026 */
+export const longDate = (ms: number) => new Date(ms).toLocaleDateString('pt-BR', { ...BR, day: 'numeric', month: 'long', year: 'numeric' });
+
+/** an extra (series or X-Men film) has its own page too */
+export const extraPath = (slug: string) => `/extra/${slug}`;
+
+/** the watched films as a short base-36 bitmask, for share links: bit n-1 is film Nº n */
+export function progressCode(seen: Iterable<number>, films: number) {
+  let v = 0;
+  for (const n of seen) if (Number.isInteger(n) && n >= 1 && n <= films) v += 2 ** (n - 1);
+  return v.toString(36);
+}
+export function parseProgressCode(code: string, films: number): Set<number> | null {
+  if (!/^[0-9a-z]{1,11}$/.test(code)) return null;
+  const v = parseInt(code, 36);
+  if (!Number.isSafeInteger(v) || v >= 2 ** films) return null;
+  const seen = new Set<number>();
+  for (let n = 1; n <= films; n++) if (Math.floor(v / 2 ** (n - 1)) % 2) seen.add(n);
+  return seen;
+}

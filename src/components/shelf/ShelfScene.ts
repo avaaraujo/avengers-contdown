@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { countdownParts, hm, pad, thumb } from '@/lib/format';
+import { countdownParts, dotDate, hm, pad, thumb } from '@/lib/format';
 
 export type Rect = { l: number; t: number; r: number; b: number };
 export type ShelfFilm = { n: number; title: string; year: number; runtime: number; cover: string };
@@ -298,7 +298,7 @@ export class ShelfScene {
     this.finale.labelTex.userData.redraw((g, w, h) => {
       g.fillStyle = '#e2231a'; g.fillRect(0, 0, w, h);
       g.fillStyle = '#f2c200'; g.fillRect(0, 0, w, 44);
-      g.fillStyle = '#121318'; g.font = `800 26px ${font}`; g.textBaseline = 'middle'; g.fillText(`${Date.now() >= this.finaleData.premiereAt ? 'ESTREOU' : 'ESTREIA'} · 17.12.2026 · Nº ${this.finaleData.n}`, 18, 23);
+      g.fillStyle = '#121318'; g.font = `800 26px ${font}`; g.textBaseline = 'middle'; g.fillText(`${Date.now() >= this.finaleData.premiereAt ? 'ESTREOU' : 'ESTREIA'} · ${dotDate(this.finaleData.premiereAt)} · Nº ${this.finaleData.n}`, 18, 23);
       g.fillStyle = '#fff'; g.textBaseline = 'alphabetic';
       if (Date.now() >= this.finaleData.premiereAt) {
         g.font = `900 78px ${font}`; g.fillText('EM CARTAZ', 18, 150);

@@ -367,3 +367,26 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
 #list ol[hidden] { display: none; }
 #list .extras .xhead, #list .extras .xcheck { display: block; width: auto; border-top: 0; }
 #list .extras .xhead { text-align: left; }
+
+/* ---------- share, tickets and the undo toast ---------- */
+.bar .share { padding: 4px 10px; font-size: 11px; }
+.count .tickets {
+  display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--yellow); text-decoration: underline; text-underline-offset: 3px;
+}
+.cp-tickets {
+  justify-self: start; margin-top: 12px; background: var(--c-yellow); color: var(--ink); border: 4px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+  font-family: var(--font-bangers), sans-serif; font-size: 28px; letter-spacing: .03em; padding: 6px 16px 4px; text-decoration: none;
+}
+.cp-tickets:hover { background: #ffd83a; }
+.toast-slot { position: fixed; z-index: 8; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: max-content; max-width: calc(100% - 32px); pointer-events: none; }
+.toast {
+  display: flex; align-items: center; gap: 14px; padding: 10px 12px 10px 16px; border-radius: 6px; pointer-events: auto;
+  background: var(--paper); color: var(--wall); font-weight: 700; font-size: 14px; box-shadow: 0 12px 34px rgba(0,0,0,.5);
+  animation: toast-in .35s var(--ease-out);
+}
+.toast span { overflow-wrap: anywhere; }
+.toast button { flex: none; border: 0; border-radius: 4px; background: var(--wall); color: var(--paper); font-weight: 800; font-size: 13px; padding: 6px 10px; cursor: pointer; }
+.toast button:hover { background: #000; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+@media (max-width: 860px) { .toast-slot { bottom: calc(160px + env(safe-area-inset-bottom)); } }

@@ -125,7 +125,7 @@ async function getBaseCatalog(): Promise<BaseCatalog> {
   for (const r of rows) if (r.tmdb_id) tmdbIds[r.id] = r.tmdb_id;
   const f = rows.find(r => r.kind === 'finale');
   if (!f) throw new Error('avengers_titles has no finale row');
-  const premiere = (config.data as { value: { at: string } }).value;
+  const premiere = (config.data as { value: { at: string; tickets_url?: string } }).value;
 
   return {
     films,
@@ -141,6 +141,7 @@ async function getBaseCatalog(): Promise<BaseCatalog> {
       comic: f.comic_label ?? '',
       cover: f.comic_cover ?? '',
       premiereAt: new Date(premiere.at).getTime(),
+      ticketsUrl: premiere.tickets_url?.startsWith('https://') ? premiere.tickets_url : null,
     },
     offersCheckedAt: checkedAt,
   };

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { getCatalog } from '@/lib/catalog';
+import { dotDate } from '@/lib/format';
 
 export const alt = 'Capa do gibi e título do filme no Avengers Countdown';
 export const size = { width: 1200, height: 630 };
@@ -20,7 +21,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const film = films.find(f => f.slug === slug);
   const title = film?.title ?? finale.title;
   const cover = film?.cover ?? finale.cover;
-  const kicker = film ? `Nº ${film.n} de ${films.length} · ${film.year}` : 'Estreia · 17.12.2026';
+  const kicker = film ? `Nº ${film.n} de ${films.length} · ${film.year}` : `Estreia · ${dotDate(finale.premiereAt)}`;
   // satori reads PNG/JPEG; the covers are WebP
   const png = await sharp(await readFile(join(process.cwd(), 'public', cover))).resize({ width: 420 }).png().toBuffer();
   const src = `data:image/png;base64,${png.toString('base64')}`;

@@ -56,6 +56,8 @@ export type Finale = {
   cover: string;
   /** epoch ms of the Brazilian premiere */
   premiereAt: number;
+  /** where to buy tickets in Brazil, once sales open (avengers_config.premiere.tickets_url) */
+  ticketsUrl: string | null;
 };
 
 export type Catalog = {
