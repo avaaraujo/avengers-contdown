@@ -20,6 +20,10 @@ type Tab = 'films' | 'series' | 'xmen';
 
 type Toast = { id: number; text: string; undo?: () => void };
 
+const TOAST_MS = 10000;
+/** how long the Próximo card keeps showing the film just marked, so a second tap cannot mark the next one */
+const HOLD_MS = 700;
+
 export function CountdownApp({ catalog, initialN = null, initialExtra = null }: { catalog: Catalog; initialN?: number | null; initialExtra?: number | null }) {
   const { films, finale, extras } = catalog;
   const total = useMemo(() => films.reduce((a, f) => a + f.runtime, 0), [films]);
@@ -38,6 +42,9 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   const [tab, setTab] = useState<Tab>(startExtra?.kind ?? 'films');
   const [openExtra, setOpenExtra] = useState<number | null>(startExtra?.id ?? null);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [toastHover, setToastHover] = useState(false);
+  const [toastFocus, setToastFocus] = useState(false);
+  const [held, setHeld] = useState<Film | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [noWebgl, setNoWebgl] = useState(false);
   const [ready, setReady] = useState(false);
@@ -59,13 +66,25 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   const listCloseRef = useRef<HTMLButtonElement>(null);
   const authBtnRef = useRef<HTMLButtonElement>(null);
   const titled = useRef(false);
+  const nextBtnRef = useRef<HTMLButtonElement>(null);
+  const holding = useRef(false);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const focusFallback = useRef(false);
+  const focusTitle = useRef(false);
+  const toastLeft = useRef({ id: 0, ms: TOAST_MS });
 
   const showToast = useCallback((text: string, undo?: () => void) => setToast({ id: Date.now(), text, undo }), []);
+  const toastHold = toastHover || toastFocus;
+  // the toast stays 10 s, and stops counting while the pointer or focus is on it
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 6000);
-    return () => clearTimeout(t);
-  }, [toast]);
+    if (toastLeft.current.id !== toast.id) toastLeft.current = { id: toast.id, ms: TOAST_MS };
+    if (toastHold) return;
+    const started = Date.now();
+    const t = setTimeout(() => { setToast(null); setToastHover(false); setToastFocus(false); }, toastLeft.current.ms);
+    return () => { clearTimeout(t); if (toastLeft.current.id === toast.id) toastLeft.current.ms -= Date.now() - started; };
+  }, [toast, toastHold]);
+  useEffect(() => () => clearTimeout(holdTimer.current), []);
 
   /* offline and installable: the service worker only runs in production builds */
   useEffect(() => {
@@ -126,6 +145,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
     if (p !== 'closed') return;
     if (!fromHistory && location.pathname !== pathOf(n)) history.pushState({ ac: 1 }, '', pathOf(n));
     returnFocus.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
+    focusFallback.current = returnFocus.current === null;
     setAuthOpen(false);
     markedInPage.current = false;
     setTag(null);
@@ -171,13 +191,25 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   }, [pageN, go]);
 
   useEffect(() => {
-    if (phase !== 'closed' || !returnFocus.current) return;
+    if (phase !== 'closed') return;
     const el = returnFocus.current;
+    if (!el) {
+      // opened by a direct link, so there is no button to go back to: land on the main action
+      if (focusFallback.current) { focusFallback.current = false; (nextBtnRef.current ?? listBtnRef.current)?.focus({ preventScroll: true }); }
+      return;
+    }
     returnFocus.current = null;
     el.focus({ preventScroll: true });
     // opened from the list, which has closed since: land on the button that opens it
     if (document.activeElement !== el && el.closest('#list')) listBtnRef.current?.focus({ preventScroll: true });
   }, [phase]);
+
+  // after the arrow keys change the issue, focus follows to its title
+  useEffect(() => {
+    if (!focusTitle.current) return;
+    focusTitle.current = false;
+    document.getElementById('cp-title')?.focus({ preventScroll: true });
+  }, [pageN]);
 
   const closeList = useCallback(() => {
     setListOpen(false);
@@ -218,8 +250,8 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { if (phaseRef.current === 'open') closeDetail(); else if (authOpen) closeAuth(); else if (listOpen) closeList(); }
       if (phaseRef.current !== 'open' || pageN === null) return;
-      if (e.key === 'ArrowRight' && pageN < finale.n) openDetail(pageN + 1);
-      if (e.key === 'ArrowLeft' && pageN > 1) openDetail(pageN - 1);
+      if (e.key === 'ArrowRight' && pageN < finale.n) { focusTitle.current = true; openDetail(pageN + 1); }
+      if (e.key === 'ArrowLeft' && pageN > 1) { focusTitle.current = true; openDetail(pageN - 1); }
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
@@ -237,11 +269,29 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
     else markedInPage.current = becomesSeen;
     return becomesSeen;
   }, [flip]);
+  /** after an undo the toast button disappears: focus goes back to what made the change, or to the main action */
+  const refocus = useCallback((origin: HTMLElement | null) => {
+    if (origin?.isConnected) origin.focus({ preventScroll: true });
+    if (!origin || document.activeElement !== origin) (nextBtnRef.current ?? listBtnRef.current)?.focus({ preventScroll: true });
+  }, []);
   /** marking from the HUD or the list is one tap, so it gets an undo */
-  const toggleWithUndo = useCallback((t: Film | Extra, n: number) => {
+  const toggleWithUndo = useCallback((t: Film | Extra, n: number, onUndo?: () => void) => {
+    const origin = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
     const on = toggle(n);
-    showToast(on ? `${t.title}: visto.` : `${t.title}: desmarcado.`, () => toggle(n));
-  }, [toggle, showToast]);
+    showToast(on ? `${t.title}: visto.` : `${t.title}: desmarcado.`, () => { toggle(n); onUndo?.(); refocus(origin); });
+  }, [toggle, showToast, refocus]);
+  /** the Próximo card: marking holds the card on "Visto!" before the next film comes up */
+  const markNext = useCallback((film: Film) => {
+    if (holding.current) return;
+    holding.current = true;
+    setHeld(film);
+    toggleWithUndo(film, film.n, () => { clearTimeout(holdTimer.current); holding.current = false; setHeld(null); });
+    holdTimer.current = setTimeout(() => {
+      holding.current = false;
+      setHeld(null);
+      if (!document.activeElement || document.activeElement === document.body) nextBtnRef.current?.focus({ preventScroll: true });
+    }, HOLD_MS);
+  }, [toggleWithUndo]);
   const resetWithUndo = useCallback(() => {
     const before = reset();
     if (before.watched.size) showToast('Progresso zerado.', () => restore(before));
@@ -280,6 +330,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
     else if (perDay < 1) { pace = `1 a cada ${dec(1 / perDay, 0)}`; paceK = `dias · ${hm(leftMin / days)} por dia`; }
     else { pace = dec(perDay); paceK = `filmes por dia · ${hm(leftMin / days)}`; }
   }
+  const shownFilm = held ?? nextFilm;
   const tagFilm = tag ? (tag.n === finale.n ? null : films[tag.n - 1]) : null;
   // while the comic page is up, everything behind it is out of reach for keyboard and screen readers
   const behind = phase !== 'closed';
@@ -310,15 +361,17 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
             {finale.ticketsUrl && <a className="tickets" href={finale.ticketsUrl} target="_blank" rel="noopener">Comprar ingresso</a>}
           </div>
         </div>
-        <div className={`next${nextFilm ? '' : ' done'}`} data-ui>
-          {nextFilm ? (
+        <div className={`next${shownFilm ? '' : ' done'}`} data-ui>
+          {shownFilm ? (
             <>
-              <img src={thumb(nextFilm.cover)} alt="" />
-              <div className="label">Próximo · Nº {nextFilm.n}</div>
-              <div className="t">{nextFilm.title}</div>
+              <img src={thumb(shownFilm.cover)} alt="" />
+              <div className="label">Próximo · Nº {shownFilm.n}</div>
+              <div className="t">{shownFilm.title}</div>
               <div className="actions">
-                <button className="btn btn-ink" onClick={() => toggleWithUndo(nextFilm, nextFilm.n)}>Marcar como visto</button>
-                <button className="btn btn-ghost" onClick={() => openDetail(nextFilm.n)}>Abrir o gibi</button>
+                <button className={`btn btn-ink${held ? ' held' : ''}`} ref={nextBtnRef} aria-disabled={held ? true : undefined}
+                  aria-label={`${held ? 'Visto' : 'Marcar como visto'}: ${shownFilm.title}`}
+                  onClick={() => { if (!held) markNext(shownFilm); }}>{held ? 'Visto!' : 'Marcar como visto'}</button>
+                <button className="btn btn-ghost" onClick={() => openDetail(shownFilm.n)}>Abrir o gibi</button>
               </div>
             </>
           ) : (
@@ -326,7 +379,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
               <img src={thumb(finale.cover)} alt="" />
               <div className="label">Maratona completa</div>
               <div className="t">{released ? 'Hora de ver o Doutor Destino no cinema.' : 'Você está pronto para o Doutor Destino.'}</div>
-              <div className="actions"><button className="btn btn-ink" onClick={() => openDetail(finale.n)}>Ver a última edição</button></div>
+              <div className="actions"><button className="btn btn-ink" ref={nextBtnRef} onClick={() => openDetail(finale.n)}>Ver a última edição</button></div>
             </>
           )}
         </div>
@@ -434,7 +487,9 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
 
       <div className="toast-slot" role="status" aria-live="polite">
         {toast && !behind && (
-          <div className="toast" key={toast.id}>
+          <div className="toast" key={toast.id}
+            onMouseEnter={() => setToastHover(true)} onMouseLeave={() => setToastHover(false)}
+            onFocus={() => setToastFocus(true)} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setToastFocus(false); }}>
             <span>{toast.text}</span>
             {toast.undo && <button onClick={() => { toast.undo!(); setToast(null); }}>Desfazer</button>}
           </div>

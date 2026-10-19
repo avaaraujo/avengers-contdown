@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- comic covers and provider logos are small fixed assets */
+import { useRef, useState } from 'react';
 import type { Film, Finale, Offer, OfferKind } from '@/lib/types';
 import { countdownParts, hm, longDate, pad, saga } from '@/lib/format';
 import { ArrowLeft, ArrowRight, BackArrow, Burst } from './Burst';
@@ -47,6 +48,9 @@ type Props = {
 
 /** The detail screen: one full comic-book page for the issue. */
 export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onToggle, onClose, onGo }: Props) {
+  const powRef = useRef<HTMLButtonElement>(null);
+  // the issue marked during this visit gets "Desfazer"; one that was already seen gets "Desmarcar"
+  const [markedHere, setMarkedHere] = useState<number | null>(null);
   const c = now === null ? null : countdownParts(finale.premiereAt, now);
   const released = now !== null && now >= finale.premiereAt;
   const sinceDays = released ? Math.floor((now - finale.premiereAt) / 864e5) : 0;
@@ -71,7 +75,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
           <img src={finale.cover} alt={`Capa de ${finale.comic}`} />
           <div className="issue-box">Nº {finale.n}</div>
           <div className="splash-text">
-            <h2 id="cp-title" className="lettering"><span className="l1">{l1}</span>{l2 && <span className="l2">{l2}</span>}</h2>
+            <h2 id="cp-title" className="lettering" tabIndex={-1}><span className="l1">{l1}</span>{l2 && <span className="l2">{l2}</span>}</h2>
             <p className="en">{finale.en}</p>
           </div>
         </div>
@@ -111,7 +115,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
         <img src={f.cover} alt={`Capa de ${f.comic}`} />
         <div className="issue-box">Nº {n}</div>
         <div className="splash-text">
-          <h2 id="cp-title" className="lettering"><span className="l1">{l1}</span>{l2 && <span className="l2">{l2}</span>}</h2>
+          <h2 id="cp-title" className="lettering" tabIndex={-1}><span className="l1">{l1}</span>{l2 && <span className="l2">{l2}</span>}</h2>
           <p className="en">{f.en}</p>
         </div>
       </div>
@@ -134,11 +138,12 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
         </div>
         <div className="action panel halftone-red">
           <div>
-            <button className={`pow burst lettering${seen ? ' seen' : ''}`} onClick={() => onToggle(n)} aria-pressed={seen}>
+            <button ref={powRef} className={`pow burst lettering${seen ? ' seen' : ''}`} aria-pressed={seen}
+              onClick={() => { const on = !seen; onToggle(n); setMarkedHere(on ? n : null); }}>
               <Burst points={18} inner={0.66} seed={n + 2} fill={seen ? '#ffffff' : '#f7c600'} />
               <span>{seen ? 'Visto!' : 'Marcar como visto!'}</span>
             </button>
-            {seen && <button className="undo" onClick={() => onToggle(n)}>Desmarcar</button>}
+            {seen && <button className="undo" onClick={() => { onToggle(n); setMarkedHere(null); powRef.current?.focus({ preventScroll: true }); }}>{markedHere === n ? 'Desfazer' : 'Desmarcar'}</button>}
           </div>
           <div className="balloon"><b><em>{n}</em> de {films.length}</b><small>na ordem</small></div>
         </div>
