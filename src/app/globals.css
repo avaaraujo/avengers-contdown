@@ -297,19 +297,14 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
 #loading { position: fixed; inset: 0; z-index: 1; display: grid; place-items: center; pointer-events: none; transition: opacity .6s; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; font-size: 12px; color: var(--muted); }
 #loading.gone { opacity: 0; pointer-events: none; }
 
-.order-pick {
-  appearance: none; -webkit-appearance: none; border: 1px solid var(--line); border-radius: 999px; color: var(--paper); cursor: pointer;
-  padding: 6px 30px 6px 12px; font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-  background: rgba(242,234,219,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%23f2eadb' stroke-width='1.6'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 12px center;
-  transition: background-color .2s, border-color .2s;
-}
-.order-pick:hover { background-color: rgba(242,234,219,.1); border-color: rgba(242,234,219,.3); }
-.order-pick option { background: var(--wall); color: var(--paper); text-transform: none; letter-spacing: 0; }
+/* looks like the other chips; the native select sits invisibly on top so the OS picker still opens */
+.order-pick { position: relative; display: inline-flex; align-items: center; }
+.order-pick select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
 
 @media (max-width: 860px) {
   .hud-top { grid-template-columns: 1fr; padding: 14px 16px 22px; gap: 18px 16px; }
-  .brand { flex-wrap: wrap; row-gap: 12px; font-size: 10px; letter-spacing: .1em; white-space: nowrap; }
-  .order-pick { order: 3; flex: 1 0 100%; min-height: 44px; font-size: 13px; }
+  .brand { font-size: 10px; letter-spacing: .1em; white-space: nowrap; }
+  .brand .logo { display: flex; flex-direction: column; gap: 2px; line-height: 1.1; white-space: normal; }
   .brand nav { gap: 4px; }
   .chip { padding: 6px 11px; }
   .next.top { display: none; }
