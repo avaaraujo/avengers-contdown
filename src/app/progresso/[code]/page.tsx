@@ -21,8 +21,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hit = await find((await params).code);
   if (!hit) return {};
   const { films, finale } = hit.catalog;
-  const title = `Vi ${hit.seen.size} de ${films.length} filmes do MCU`;
-  const description = `A maratona do MCU em ordem cronológica até ${finale.title}. Marque os seus e veja quanto falta.`;
+  const title = `Um amigo viu ${hit.seen.size} de ${films.length} filmes do MCU`;
+  const description = `A maratona do MCU em ordem cronológica até ${finale.title}. Comece a sua e veja quanto falta.`;
   return {
     title,
     description,
@@ -37,5 +37,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProgressPage({ params }: Props) {
   const hit = await find((await params).code);
   if (!hit) notFound();
-  return <CountdownApp catalog={hit.catalog} />;
+  return <CountdownApp catalog={hit.catalog} sharedSeen={[...hit.seen]} />;
 }

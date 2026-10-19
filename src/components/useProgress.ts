@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase/client';
 
-const LOCAL_KEY = 'ac-watched';
+export const LOCAL_KEY = 'ac-watched';
 export type SessionUser = { id: string; email: string | null };
 
 function readLocal(): Set<number> {

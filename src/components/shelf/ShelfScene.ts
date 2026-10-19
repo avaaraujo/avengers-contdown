@@ -399,7 +399,7 @@ export class ShelfScene {
       const busy = sel !== null && !isSel ? 0.5 : 1;
       const nextLift = it.isNext && !it.watched ? 1 : 0;
       const u = it.front.userData.u as Uniforms;
-      u.uSat.value = 0.1 + Math.max(it.sat, nextLift * 0.55, it.sel) * 0.9;
+      u.uSat.value = 0.1 + Math.max(it.sat, nextLift * 0.28, it.sel) * 0.9; // the next one is lifted, not colored: color is for what was watched
       u.uBright.value = (0.46 + Math.max(it.sat, nextLift * 0.75, it.sel) * 0.54 + it.hover * 0.14) * busy;
       it.bag.material.opacity = 0.16 * (1 - it.bagOff);
       it.bag.position.y = it.bagOff * H * 1.15;

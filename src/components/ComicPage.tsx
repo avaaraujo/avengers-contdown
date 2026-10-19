@@ -41,13 +41,16 @@ type Props = {
   watched: Set<number>;
   now: number | null;
   offersCheckedAt: string | null;
+  /** looking at a friend's shelf: read-only, with a way back to one's own */
+  friend?: boolean;
+  onLeaveFriend?(): void;
   onToggle(n: number): void;
   onClose(): void;
   onGo(n: number): void;
 };
 
 /** The detail screen: one full comic-book page for the issue. */
-export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onToggle, onClose, onGo }: Props) {
+export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, friend, onLeaveFriend, onToggle, onClose, onGo }: Props) {
   const powRef = useRef<HTMLButtonElement>(null);
   // the issue marked during this visit gets "Desfazer"; one that was already seen gets "Desmarcar"
   const [markedHere, setMarkedHere] = useState<number | null>(null);
@@ -137,6 +140,12 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
           <p className="src">Dados de streaming: JustWatch{checked ? `, ${checked}` : ''}.</p>
         </div>
         <div className="action panel halftone-red">
+          {friend ? (
+            <div className="friend-note">
+              <p>Você está vendo a estante do seu amigo. {seen ? 'Ele já viu este filme.' : 'Ele ainda não viu este filme.'}</p>
+              <button className="undo" onClick={onLeaveFriend}>Voltar para a minha</button>
+            </div>
+          ) : (
           <div>
             <button ref={powRef} className={`pow burst lettering${seen ? ' seen' : ''}`} aria-pressed={seen}
               onClick={() => { const on = !seen; onToggle(n); setMarkedHere(on ? n : null); }}>
@@ -145,6 +154,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
             </button>
             {seen && <button className="undo" onClick={() => { onToggle(n); setMarkedHere(null); powRef.current?.focus({ preventScroll: true }); }}>{markedHere === n ? 'Desfazer' : 'Desmarcar'}</button>}
           </div>
+          )}
           <div className="balloon"><b>Nº <em>{n}</em> de {films.length}</b><small>na ordem cronológica</small></div>
         </div>
       </div>

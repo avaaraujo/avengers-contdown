@@ -7,7 +7,7 @@ import { countdownParts, dec, dotDate, extraPath, filmPath, hm, pad, progressCod
 import type { Rect, ShelfScene } from './shelf/ShelfScene';
 import { ComicPage, Offers } from './ComicPage';
 import { Check, Close } from './Burst';
-import { useProgress } from './useProgress';
+import { LOCAL_KEY, useProgress } from './useProgress';
 import { AuthPanel } from './AuthPanel';
 
 type Phase = 'closed' | 'flying' | 'open' | 'closing';
@@ -24,12 +24,80 @@ const TOAST_MS = 10000;
 /** how long the Próximo card keeps showing the film just marked, so a second tap cannot mark the next one */
 const HOLD_MS = 700;
 
-export function CountdownApp({ catalog, initialN = null, initialExtra = null }: { catalog: Catalog; initialN?: number | null; initialExtra?: number | null }) {
+type NextCardProps = {
+  slot: 0 | 1;
+  film: Film | null;
+  held: boolean;
+  firstVisit: boolean;
+  finale: Catalog['finale'];
+  released: boolean;
+  filmCount: number;
+  /** set while looking at a friend's shelf: how many films they have seen */
+  friendSeen: number | null;
+  setBtn(slot: 0 | 1, el: HTMLButtonElement | null): void;
+  onMark(film: Film): void;
+  onOpen(n: number): void;
+  onLeaveFriend(): void;
+};
+
+/**
+ * The Próximo card. It exists twice: beside the countdown on wide screens, above the stats (in thumb reach)
+ * on phones; CSS shows one. While looking at a friend's shelf it says whose it is and offers the way back.
+ */
+function NextCard({ slot, film, held, firstVisit, finale, released, filmCount, friendSeen, setBtn, onMark, onOpen, onLeaveFriend }: NextCardProps) {
+  const place = slot ? 'bottom' : 'top';
+  const ref = (el: HTMLButtonElement | null) => setBtn(slot, el);
+  if (friendSeen !== null) {
+    return (
+      <div className={`next ${place} done`} data-ui>
+        <img src={thumb(finale.cover)} alt="" />
+        <div className="label">Estante do seu amigo</div>
+        <div className="t">{friendSeen} de {filmCount} filmes vistos</div>
+        <div className="actions"><button className="btn btn-ink" ref={ref} onClick={onLeaveFriend}>Voltar para a minha</button></div>
+      </div>
+    );
+  }
+  return (
+    <div className={`next ${place}${film ? '' : ' done'}`} data-ui>
+      {film ? (
+        <>
+          <img src={thumb(film.cover)} alt="" />
+          <div className="label">{firstVisit ? 'Comece por aqui' : 'Próximo'} · Nº {film.n}</div>
+          <div className="t">{film.title}</div>
+          {firstVisit && <div className="hint">A ordem é a da história, não a de lançamento.</div>}
+          <div className="actions">
+            <button className={`btn btn-ink${held ? ' held' : ''}`} ref={ref} aria-disabled={held ? true : undefined}
+              aria-label={`${held ? 'Visto' : 'Marcar como visto'}: ${film.title}`}
+              onClick={() => { if (!held) onMark(film); }}>{held ? 'Visto!' : 'Marcar como visto'}</button>
+            <button className="btn btn-ghost" onClick={() => onOpen(film.n)}>Abrir o gibi</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <img src={thumb(finale.cover)} alt="" />
+          <div className="label">Maratona completa: {filmCount} de {filmCount}</div>
+          <div className="t">{released ? 'Hora de ver no cinema.' : 'Você está pronto para o Doutor Destino.'}</div>
+          <div className="actions"><button className="btn btn-ink" ref={ref} onClick={() => onOpen(finale.n)}>Ver a última edição</button></div>
+        </>
+      )}
+    </div>
+  );
+}
+
+const WELCOME_KEY = 'ac-welcomed';
+
+export function CountdownApp({ catalog, initialN = null, initialExtra = null, sharedSeen }: { catalog: Catalog; initialN?: number | null; initialExtra?: number | null; sharedSeen?: number[] }) {
   const { films, finale, extras } = catalog;
   const total = useMemo(() => films.reduce((a, f) => a + f.runtime, 0), [films]);
   const items = useMemo(() => [...films.map(f => ({ id: f.id, n: f.n })), ...extras.map(x => ({ id: x.id, n: x.key }))], [films, extras]);
   const progress = useProgress(items);
-  const { watched, toggle: flip, reset, restore } = progress;
+  const { watched: ownWatched, toggle: flip, reset, restore } = progress;
+  // a friend's shelf (from a shared link) can be looked at, read-only; everything on screen follows the shelf being viewed
+  const [welcome, setWelcome] = useState(false);
+  const [friendView, setFriendView] = useState(false);
+  const friendRef = useRef(false);
+  const friendSet = useMemo(() => new Set(sharedSeen ?? []), [sharedSeen]);
+  const watched = friendView ? friendSet : ownWatched;
   const startExtra = extras.find(x => x.id === initialExtra) ?? null;
 
   // the clock only exists in the browser; the prerendered shell shows placeholders
@@ -75,6 +143,29 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   const focusTitle = useRef(false);
   const toastLeft = useRef({ id: 0, ms: TOAST_MS });
 
+  /* a visitor arriving by a friend's link, with no progress of their own, gets one welcome */
+  useEffect(() => {
+    if (!sharedSeen || !progress.authReady || progress.user) return;
+    try {
+      if (localStorage.getItem(WELCOME_KEY) === '1') return;
+      if ((JSON.parse(localStorage.getItem(LOCAL_KEY) ?? '[]') as number[]).length > 0) return;
+    } catch { /* storage blocked: show it, it only costs one click */ }
+    // after the first paint, so the welcome never flashes for a visitor who already has progress
+    const t = setTimeout(() => setWelcome(true), 0);
+    return () => clearTimeout(t);
+  }, [sharedSeen, progress.authReady, progress.user]);
+  const closeWelcome = useCallback((toFriend: boolean) => {
+    try { localStorage.setItem(WELCOME_KEY, '1'); } catch { /* shown again next visit, harmless */ }
+    setWelcome(false);
+    if (toFriend) setFriendView(true);
+    // the buttons are inert while the welcome is up: wait a frame for them to wake before moving focus
+    requestAnimationFrame(() => mainAction()?.focus({ preventScroll: true }));
+  }, [mainAction]);
+  const leaveFriendView = useCallback(() => {
+    setFriendView(false);
+    requestAnimationFrame(() => mainAction()?.focus({ preventScroll: true }));
+  }, [mainAction]);
+
   const showToast = useCallback((text: string, undo?: () => void) => setToast({ id: Date.now(), text, undo }), []);
   const toastHold = toastHover || toastFocus;
   // the toast stays 10 s, and stops counting while the pointer or focus is on it
@@ -95,6 +186,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   }, []);
 
   const nextFilm = films.find(f => !watched.has(f.n)) ?? null;
+  useEffect(() => { friendRef.current = friendView; }, [friendView]);
 
   /* the 3D shelf (client only, loaded on demand) */
   useEffect(() => {
@@ -254,14 +346,14 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { if (phaseRef.current === 'open') closeDetail(); else if (authOpen) closeAuth(); else if (listOpen) closeList(); }
+      if (e.key === 'Escape') { if (welcome) closeWelcome(false); else if (phaseRef.current === 'open') closeDetail(); else if (authOpen) closeAuth(); else if (listOpen) closeList(); }
       if (phaseRef.current !== 'open' || pageN === null) return;
       if (e.key === 'ArrowRight' && pageN < finale.n) { focusTitle.current = true; openDetail(pageN + 1); }
       if (e.key === 'ArrowLeft' && pageN > 1) { focusTitle.current = true; openDetail(pageN - 1); }
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
-  }, [closeDetail, openDetail, pageN, finale.n, authOpen, listOpen, closeAuth, closeList]);
+  }, [closeDetail, openDetail, pageN, finale.n, authOpen, listOpen, closeAuth, closeList, welcome, closeWelcome]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -270,11 +362,12 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   }, [phase]);
 
   const toggle = useCallback((n: number) => {
+    if (friendRef.current) return friendSet.has(n);
     const becomesSeen = flip(n);
     if (phaseRef.current === 'closed') { if (becomesSeen) sceneRef.current?.popStamp(n); }
     else markedInPage.current = becomesSeen;
     return becomesSeen;
-  }, [flip]);
+  }, [flip, friendSet]);
   /** after an undo the toast button disappears: focus goes back to what made the change, or to the main action */
   const refocus = useCallback((origin: HTMLElement | null) => {
     if (origin?.isConnected) origin.focus({ preventScroll: true });
@@ -282,13 +375,14 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   }, [mainAction]);
   /** marking from the HUD or the list is one tap, so it gets an undo */
   const toggleWithUndo = useCallback((t: Film | Extra, n: number, onUndo?: () => void) => {
+    if (friendRef.current) { showToast('Esta é a estante do seu amigo. Volte para a sua para marcar filmes.'); return; }
     const origin = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
     const on = toggle(n);
     showToast(on ? `${t.title}: visto.` : `${t.title}: desmarcado.`, () => { toggle(n); onUndo?.(); refocus(origin); });
   }, [toggle, showToast, refocus]);
   /** the Próximo card: marking holds the card on "Visto!" before the next film comes up */
   const markNext = useCallback((film: Film) => {
-    if (holding.current) return;
+    if (holding.current || friendRef.current) return;
     holding.current = true;
     setHeld(film);
     toggleWithUndo(film, film.n, () => { clearTimeout(holdTimer.current); holding.current = false; setHeld(null); });
@@ -299,6 +393,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
     }, HOLD_MS);
   }, [toggleWithUndo, mainAction]);
   const resetWithUndo = useCallback(() => {
+    if (friendRef.current) return;
     const before = reset();
     if (before.watched.size) showToast('Progresso zerado.', () => restore(before));
   }, [reset, restore, showToast]);
@@ -345,34 +440,15 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
     else { pace = dec(perDay); paceK = `filmes por dia · ${hm(leftMin / days)}`; paceShort = 'filmes por dia'; }
   }
   const shownFilm = held ?? nextFilm;
-  /** the Próximo card exists twice: beside the countdown on wide screens, above the stats (in thumb reach) on phones; CSS shows one */
-  const nextCard = (slot: 0 | 1) => (
-    <div className={`next ${slot ? 'bottom' : 'top'}${shownFilm ? '' : ' done'}`} data-ui>
-      {shownFilm ? (
-        <>
-          <img src={thumb(shownFilm.cover)} alt="" />
-          <div className="label">Próximo · Nº {shownFilm.n}</div>
-          <div className="t">{shownFilm.title}</div>
-          <div className="actions">
-            <button className={`btn btn-ink${held ? ' held' : ''}`} ref={el => { nextBtnRefs.current[slot] = el; }} aria-disabled={held ? true : undefined}
-              aria-label={`${held ? 'Visto' : 'Marcar como visto'}: ${shownFilm.title}`}
-              onClick={() => { if (!held) markNext(shownFilm); }}>{held ? 'Visto!' : 'Marcar como visto'}</button>
-            <button className="btn btn-ghost" onClick={() => openDetail(shownFilm.n)}>Abrir o gibi</button>
-          </div>
-        </>
-      ) : (
-        <>
-          <img src={thumb(finale.cover)} alt="" />
-          <div className="label">Maratona completa: {films.length} de {films.length}</div>
-          <div className="t">{released ? 'Hora de ver no cinema.' : 'Você está pronto para o Doutor Destino.'}</div>
-          <div className="actions"><button className="btn btn-ink" ref={el => { nextBtnRefs.current[slot] = el; }} onClick={() => openDetail(finale.n)}>Ver a última edição</button></div>
-        </>
-      )}
-    </div>
+  const setNextBtn = useCallback((slot: 0 | 1, el: HTMLButtonElement | null) => { nextBtnRefs.current[slot] = el; }, []);
+  const nextCardFor = (slot: 0 | 1) => (
+    <NextCard slot={slot} film={shownFilm} held={held !== null} firstVisit={ownWatched.size === 0} finale={finale} released={released}
+      filmCount={films.length} friendSeen={friendView ? seenFilms.length : null} setBtn={setNextBtn}
+      onMark={markNext} onOpen={openDetail} onLeaveFriend={leaveFriendView} />
   );
   const tagFilm = tag ? (tag.n === finale.n ? null : films[tag.n - 1]) : null;
   // while the comic page is up, everything behind it is out of reach for keyboard and screen readers
-  const behind = phase !== 'closed';
+  const behind = phase !== 'closed' || welcome;
 
   return (
     <div className={noWebgl ? 'no-webgl' : undefined}>
@@ -400,11 +476,11 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
             {finale.ticketsUrl && <a className="tickets" href={finale.ticketsUrl} target="_blank" rel="noopener">Comprar ingresso</a>}
           </div>
         </div>
-        {nextCard(0)}
+        {nextCardFor(0)}
       </header>
 
       <footer className="hud-bottom" ref={botRef} inert={behind}>
-        {nextCard(1)}
+        {nextCardFor(1)}
         <div className="stats" data-ui>
           <div className="stat"><div className="v num">{hm(seenMin)}</div><div className="k">assistidas</div></div>
           <div className="stat"><div className="v num">{hm(leftMin)}</div><div className="k">faltam</div></div>
@@ -416,7 +492,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
             <div className="fill" style={{ width: `${(seenMin / total) * 100}%` }} />
           </div>
           <div className="pct num">{seenFilms.length} de {films.length}</div>
-          {seenFilms.length > 0 && <button className="chip share" onClick={() => void share()}>Compartilhar</button>}
+          {seenFilms.length > 0 && !friendView && <button className="chip share" onClick={() => void share()}>Compartilhar</button>}
         </div>
         <div className="demo" data-ui role="status">
           {progress.error
@@ -440,6 +516,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
         className={phase === 'open' || phase === 'closing' ? `open${phase === 'open' ? ' shown' : ''}` : undefined} data-ui>
         {pageN !== null && phase !== 'closed' && phase !== 'flying' && (
           <ComicPage n={pageN} films={films} finale={finale} watched={watched} now={now} offersCheckedAt={catalog.offersCheckedAt}
+            friend={friendView} onLeaveFriend={leaveFriendView}
             onToggle={toggle} onClose={() => closeDetail()} onGo={n => openDetail(n)} />
         )}
       </section>
@@ -498,7 +575,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
             </li>
           ))}
         </ol>
-        {watched.size > 0 && (
+        {ownWatched.size > 0 && !friendView && (
           <div className="list-foot">
             <button className="btn btn-light" onClick={resetWithUndo}>Zerar progresso</button>
           </div>
@@ -518,6 +595,21 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
           </div>
         )}
       </div>
+
+      {welcome && (
+        <div className="welcome-scrim" data-ui>
+          <section className="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+            <p className="eyebrow">Um amigo te mandou a estante dele</p>
+            <h2 id="welcome-title">Um amigo já viu {sharedSeen!.length} de {films.length} filmes antes de {finale.title}.</h2>
+            <p>A fila segue a ordem cronológica da história, não a de lançamento. Por isso o Nº 1 é {films[0].title}.</p>
+            <div className="welcome-actions">
+              <button className="btn btn-yellow" autoFocus onClick={() => closeWelcome(false)}>Começar a minha maratona</button>
+              <button className="btn btn-light" onClick={() => closeWelcome(true)}>Ver a estante do meu amigo</button>
+            </div>
+            <p className="note">Sem conta: seu progresso fica salvo neste navegador.</p>
+          </section>
+        </div>
+      )}
 
       <div id="loading" className={ready ? 'gone' : undefined}>Arrumando a estante…</div>
     </div>
