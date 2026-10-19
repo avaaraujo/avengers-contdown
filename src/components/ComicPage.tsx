@@ -57,8 +57,8 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
   const seenCount = films.filter(f => watched.has(f.n)).length;
   const top = (
     <div className="cp-top panel">
-      <button className="back" onClick={onClose} data-autofocus>
-        <BackArrow /><span>Voltar para a estante</span>
+      <button className="back" onClick={onClose} data-autofocus aria-label="Voltar para a estante">
+        <BackArrow /><span className="full" aria-hidden="true">Voltar para a estante</span><span className="short" aria-hidden="true">Voltar</span>
       </button>
       <div className="mast lettering" aria-hidden="true"><span className="a">Avengers</span><span className="b">Countdown</span></div>
       <div className="burst days-burst lettering"><Burst points={13} inner={0.62} seed={3} /><span>{released ? 'Estreou!' : c ? `${c.d} dias!` : '…'}</span></div>

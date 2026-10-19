@@ -66,7 +66,9 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   const listCloseRef = useRef<HTMLButtonElement>(null);
   const authBtnRef = useRef<HTMLButtonElement>(null);
   const titled = useRef(false);
-  const nextBtnRef = useRef<HTMLButtonElement>(null);
+  const nextBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  /** the main action of whichever Próximo card is on screen */
+  const mainAction = useCallback(() => nextBtnRefs.current.find(b => b && b.getClientRects().length > 0) ?? listBtnRef.current, []);
   const holding = useRef(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const focusFallback = useRef(false);
@@ -123,7 +125,11 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   useEffect(() => { sceneRef.current?.setWatched(watched, nextFilm?.n ?? null); }, [watched, nextFilm, ready]);
   useEffect(() => {
     if (!ready) return;
-    const measure = () => sceneRef.current?.setInsets(topRef.current?.offsetHeight ?? 0, botRef.current?.offsetHeight ?? 0);
+    const measure = () => {
+      sceneRef.current?.setInsets(topRef.current?.offsetHeight ?? 0, botRef.current?.offsetHeight ?? 0);
+      // the toast sits just above the bottom HUD, whatever its height
+      document.documentElement.style.setProperty('--hud-bottom', `${botRef.current?.offsetHeight ?? 0}px`);
+    };
     measure();
     const ro = new ResizeObserver(measure);
     if (topRef.current) ro.observe(topRef.current);
@@ -195,14 +201,14 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
     const el = returnFocus.current;
     if (!el) {
       // opened by a direct link, so there is no button to go back to: land on the main action
-      if (focusFallback.current) { focusFallback.current = false; (nextBtnRef.current ?? listBtnRef.current)?.focus({ preventScroll: true }); }
+      if (focusFallback.current) { focusFallback.current = false; mainAction()?.focus({ preventScroll: true }); }
       return;
     }
     returnFocus.current = null;
     el.focus({ preventScroll: true });
     // opened from the list, which has closed since: land on the button that opens it
     if (document.activeElement !== el && el.closest('#list')) listBtnRef.current?.focus({ preventScroll: true });
-  }, [phase]);
+  }, [phase, mainAction]);
 
   // after the arrow keys change the issue, focus follows to its title
   useEffect(() => {
@@ -272,8 +278,8 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   /** after an undo the toast button disappears: focus goes back to what made the change, or to the main action */
   const refocus = useCallback((origin: HTMLElement | null) => {
     if (origin?.isConnected) origin.focus({ preventScroll: true });
-    if (!origin || document.activeElement !== origin) (nextBtnRef.current ?? listBtnRef.current)?.focus({ preventScroll: true });
-  }, []);
+    if (!origin || document.activeElement !== origin) mainAction()?.focus({ preventScroll: true });
+  }, [mainAction]);
   /** marking from the HUD or the list is one tap, so it gets an undo */
   const toggleWithUndo = useCallback((t: Film | Extra, n: number, onUndo?: () => void) => {
     const origin = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
@@ -289,9 +295,9 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
     holdTimer.current = setTimeout(() => {
       holding.current = false;
       setHeld(null);
-      if (!document.activeElement || document.activeElement === document.body) nextBtnRef.current?.focus({ preventScroll: true });
+      if (!document.activeElement || document.activeElement === document.body) mainAction()?.focus({ preventScroll: true });
     }, HOLD_MS);
-  }, [toggleWithUndo]);
+  }, [toggleWithUndo, mainAction]);
   const resetWithUndo = useCallback(() => {
     const before = reset();
     if (before.watched.size) showToast('Progresso zerado.', () => restore(before));
@@ -322,15 +328,41 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   const sinceDays = released ? Math.floor((now - finale.premiereAt) / 864e5) : 0;
   const cd = now === null ? null : countdownParts(finale.premiereAt, now);
   const days = now === null ? null : Math.max((finale.premiereAt - now) / 864e5, 0.01);
-  let pace = '—', paceK = 'filmes por dia';
+  // the legend has a short form for phones, where four stats share one row
+  let pace = '—', paceK = 'filmes por dia', paceShort = 'filmes por dia';
   if (days !== null) {
     const perDay = leftFilms / days;
-    if (released) { pace = 'Em cartaz'; paceK = leftFilms === 0 ? 'e você estava pronto' : 'a maratona segue, sem pressa'; }
-    else if (leftFilms === 0) { pace = 'Pronto'; paceK = 'para a estreia'; }
-    else if (perDay < 1) { pace = `1 a cada ${dec(1 / perDay, 0)}`; paceK = `dias · ${hm(leftMin / days)} por dia`; }
-    else { pace = dec(perDay); paceK = `filmes por dia · ${hm(leftMin / days)}`; }
+    if (released) { pace = 'Em cartaz'; paceK = leftFilms === 0 ? 'e você estava pronto' : 'a maratona segue, sem pressa'; paceShort = leftFilms === 0 ? 'e você estava pronto' : 'sem pressa'; }
+    else if (leftFilms === 0) { pace = 'Pronto'; paceK = paceShort = 'para a estreia'; }
+    else if (perDay < 1) { pace = `1 a cada ${dec(1 / perDay, 0)}`; paceK = `dias · ${hm(leftMin / days)} por dia`; paceShort = 'dias, por filme'; }
+    else { pace = dec(perDay); paceK = `filmes por dia · ${hm(leftMin / days)}`; paceShort = 'filmes por dia'; }
   }
   const shownFilm = held ?? nextFilm;
+  /** the Próximo card exists twice: beside the countdown on wide screens, above the stats (in thumb reach) on phones; CSS shows one */
+  const nextCard = (slot: 0 | 1) => (
+    <div className={`next ${slot ? 'bottom' : 'top'}${shownFilm ? '' : ' done'}`} data-ui>
+      {shownFilm ? (
+        <>
+          <img src={thumb(shownFilm.cover)} alt="" />
+          <div className="label">Próximo · Nº {shownFilm.n}</div>
+          <div className="t">{shownFilm.title}</div>
+          <div className="actions">
+            <button className={`btn btn-ink${held ? ' held' : ''}`} ref={el => { nextBtnRefs.current[slot] = el; }} aria-disabled={held ? true : undefined}
+              aria-label={`${held ? 'Visto' : 'Marcar como visto'}: ${shownFilm.title}`}
+              onClick={() => { if (!held) markNext(shownFilm); }}>{held ? 'Visto!' : 'Marcar como visto'}</button>
+            <button className="btn btn-ghost" onClick={() => openDetail(shownFilm.n)}>Abrir o gibi</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <img src={thumb(finale.cover)} alt="" />
+          <div className="label">Maratona completa</div>
+          <div className="t">{released ? 'Hora de ver o Doutor Destino no cinema.' : 'Você está pronto para o Doutor Destino.'}</div>
+          <div className="actions"><button className="btn btn-ink" ref={el => { nextBtnRefs.current[slot] = el; }} onClick={() => openDetail(finale.n)}>Ver a última edição</button></div>
+        </>
+      )}
+    </div>
+  );
   const tagFilm = tag ? (tag.n === finale.n ? null : films[tag.n - 1]) : null;
   // while the comic page is up, everything behind it is out of reach for keyboard and screen readers
   const behind = phase !== 'closed';
@@ -361,36 +393,16 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
             {finale.ticketsUrl && <a className="tickets" href={finale.ticketsUrl} target="_blank" rel="noopener">Comprar ingresso</a>}
           </div>
         </div>
-        <div className={`next${shownFilm ? '' : ' done'}`} data-ui>
-          {shownFilm ? (
-            <>
-              <img src={thumb(shownFilm.cover)} alt="" />
-              <div className="label">Próximo · Nº {shownFilm.n}</div>
-              <div className="t">{shownFilm.title}</div>
-              <div className="actions">
-                <button className={`btn btn-ink${held ? ' held' : ''}`} ref={nextBtnRef} aria-disabled={held ? true : undefined}
-                  aria-label={`${held ? 'Visto' : 'Marcar como visto'}: ${shownFilm.title}`}
-                  onClick={() => { if (!held) markNext(shownFilm); }}>{held ? 'Visto!' : 'Marcar como visto'}</button>
-                <button className="btn btn-ghost" onClick={() => openDetail(shownFilm.n)}>Abrir o gibi</button>
-              </div>
-            </>
-          ) : (
-            <>
-              <img src={thumb(finale.cover)} alt="" />
-              <div className="label">Maratona completa</div>
-              <div className="t">{released ? 'Hora de ver o Doutor Destino no cinema.' : 'Você está pronto para o Doutor Destino.'}</div>
-              <div className="actions"><button className="btn btn-ink" ref={nextBtnRef} onClick={() => openDetail(finale.n)}>Ver a última edição</button></div>
-            </>
-          )}
-        </div>
+        {nextCard(0)}
       </header>
 
       <footer className="hud-bottom" ref={botRef} inert={behind}>
+        {nextCard(1)}
         <div className="stats" data-ui>
           <div className="stat"><div className="v num">{hm(seenMin)}</div><div className="k">assistidas</div></div>
           <div className="stat"><div className="v num">{hm(leftMin)}</div><div className="k">faltam</div></div>
           <div className="stat"><div className="v num">{leftFilms}</div><div className="k">{leftFilms === 1 ? 'filme pela frente' : 'filmes pela frente'}</div></div>
-          <div className="stat pace"><div className="v num">{pace}</div><div className="k">{paceK}</div></div>
+          <div className="stat pace"><div className="v num">{pace}</div><div className="k"><span className="k-long">{paceK}</span><span className="k-short">{paceShort}</span></div></div>
         </div>
         <div className="bar" data-ui>
           <div className="track" role="progressbar" aria-label="Progresso da maratona" aria-valuemin={0} aria-valuemax={films.length} aria-valuenow={seenFilms.length}>
@@ -405,7 +417,6 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
             : progress.user
               ? <span>Progresso salvo na sua conta.</span>
               : <span>Seu progresso fica salvo neste navegador. <button onClick={() => setAuthOpen(true)}>Entre</button> para levar para qualquer aparelho.</span>}
-          {watched.size > 0 && <button onClick={resetWithUndo}>Zerar</button>}
         </div>
       </footer>
 
@@ -480,6 +491,11 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
             </li>
           ))}
         </ol>
+        {watched.size > 0 && (
+          <div className="list-foot">
+            <button className="btn btn-light" onClick={resetWithUndo}>Zerar progresso</button>
+          </div>
+        )}
         <p className="credit">
           Capas: Marvel Database. Streaming: JustWatch{catalog.tmdb ? ' via TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado por ele' : ''}.
         </p>
