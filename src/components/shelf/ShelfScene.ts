@@ -447,7 +447,7 @@ export class ShelfScene {
       const bob = it.isNext && !rm ? Math.sin(t * 2) * 0.03 : 0;
       v.copy(it.home);
       v.z += it.hover * 0.22 + (it.isNext ? 0.28 : 0);
-      v.y += it.hover * 0.08 + (it.isNext ? 0.06 + bob : 0);
+      v.y += it.hover * 0.2 + (it.isNext ? 0.2 + bob : 0); // high enough that the cover's foot clears the ledge label
       let rx = -0.13 + it.hover * 0.1 + (it.isNext ? 0.08 : 0), ry = 0, s = 1;
       if (it.sel > 0.001) {
         const o = ease(Math.min(1, it.open));

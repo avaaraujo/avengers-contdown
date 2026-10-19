@@ -69,16 +69,20 @@ button { font: inherit; color: inherit; }
 .count .clock { font-size: clamp(26px, 3.2vw, 40px); font-weight: 800; font-variation-settings: "wdth" 62; line-height: 1; margin-top: 4px; }
 .count .to { color: var(--muted); font-size: 13px; margin-top: 8px; max-width: 30ch; line-height: 1.35; }
 .count .to strong { color: var(--paper); font-weight: 700; }
+/* the Próximo card is a printed comic caption box set on the wall: flat yellow, ink frame, lettered title */
 .next {
-  grid-column: 3; display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; align-items: center;
-  max-width: 440px; padding: 12px 14px 12px 12px; border-radius: 6px;
-  background: var(--yellow); color: var(--wall); box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  grid-column: 3; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px 16px; align-items: center; position: relative;
+  max-width: 440px; padding: 34px 16px 16px; border: 3px solid var(--ink); border-radius: 0;
+  background: var(--c-yellow); color: var(--ink); box-shadow: 0 10px 30px rgba(0,0,0,.35);
 }
-.next img { grid-row: 1 / -1; width: 46px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 2px; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
-.next .label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 800; font-variation-settings: "wdth" 110; }
-.next .t { font-weight: 800; font-size: 17px; line-height: 1.15; font-variation-settings: "wdth" 80; }
-.next .actions { display: flex; gap: 8px; margin-top: 6px; }
-.next .hint { grid-column: 2; font-size: 12px; font-weight: 600; opacity: .75; margin-top: 2px; }
+.next img { grid-row: 1 / span 2; width: 88px; aspect-ratio: 2 / 3; object-fit: cover; border: 3px solid var(--white); transform: rotate(-4deg); box-shadow: 0 8px 16px rgba(0,0,0,.35); }
+.next.first img { grid-row: 1 / span 3; }
+.next .label { position: absolute; top: 0; left: 0; padding: 5px 12px; background: var(--ink); color: var(--c-yellow); font-family: var(--font-shantell), sans-serif; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.next .t { font-family: var(--font-bangers), sans-serif; font-weight: 400; font-size: 27px; line-height: .95; letter-spacing: .02em; color: var(--white); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; transform: rotate(-1.5deg); transform-origin: left center; text-wrap: balance; }
+.next .actions { display: flex; gap: 8px; margin-top: 4px; }
+.next .hint { grid-column: 2; font-family: var(--font-shantell), sans-serif; font-size: 12.5px; font-weight: 600; line-height: 1.35; }
+.next .btn { border-radius: 0; }
+.next .btn-ghost { box-shadow: inset 0 0 0 2px var(--ink); }
 .btn { border: 0; border-radius: 4px; padding: 8px 12px; cursor: pointer; font-weight: 800; font-size: 13px; transition: transform .15s var(--ease-out), background .2s; }
 .btn:active { transform: translateY(1px); }
 .btn-ink { background: var(--wall); color: var(--paper); }
@@ -270,9 +274,9 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
 
 /* ---------- list view (also the no-WebGL fallback) ---------- */
 #list {
-  position: fixed; z-index: 4; top: 0; left: 0; bottom: 0; width: min(420px, 100%); overflow-y: auto;
-  background: var(--wall-2); transform: translateX(-104%); transition: transform .5s var(--ease-out);
-  box-shadow: 20px 0 60px rgba(0,0,0,.45); padding: 20px 0 40px;
+  position: fixed; z-index: 4; top: 0; right: 0; bottom: 0; width: min(420px, 100%); overflow-y: auto;
+  background: var(--wall-2); transform: translateX(104%); transition: transform .5s var(--ease-out);
+  box-shadow: -20px 0 60px rgba(0,0,0,.45); padding: 20px 0 40px;
 }
 #list.open { transform: none; }
 #list header { display: flex; justify-content: space-between; align-items: center; padding: 0 20px 12px; }
@@ -323,19 +327,7 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
   .brand nav { gap: 4px; }
   .chip { padding: 6px 11px; }
   .next.top { display: none; }
-  .next.bottom.first { display: none; } /* first visit: the shelf and the countdown lead, no card */
-  /* the Próximo card moves to the thumb zone: a compact bar above the stats, 48px targets */
-  .next.bottom {
-    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 10px; align-items: center;
-    max-width: none; padding: 8px 10px; margin-bottom: 8px; pointer-events: auto;
-  }
-  .next.bottom img { grid-row: 1 / span 2; width: 30px; }
-  .next.bottom .hint { display: none; }
-  .next.bottom.done .t { white-space: normal; }
-  .next.bottom .t { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-  .next.bottom .actions { grid-column: 1 / -1; margin-top: 8px; gap: 8px; }
-  .next.bottom .btn { flex: 1 1 0; min-height: 48px; padding: 0 10px; font-size: 14px; }
-  .next.bottom .btn-ink { flex-grow: 1.5; }
+  /* no Próximo card on phones: the shelf and the numbers lead (.next.bottom stays hidden) */
   .count { gap: 12px; }
   .count .days { font-size: 108px; line-height: .74; margin-bottom: .05em; } /* the digits span the text block beside them, top of "dias" to the last baseline */
   .count .clock { font-size: 24px; }
