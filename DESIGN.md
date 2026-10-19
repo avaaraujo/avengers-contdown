@@ -309,6 +309,7 @@ Quiet on the wall, loud on the page.
 The comic page's main action: a comic-yellow starburst SVG (18 points, deterministic jitter, 2.4px ink stroke) with red Bangers text clamp(36px, 3.8vw, 58px) rotated −6°, sitting on a halftone red panel, reading "MARCAR COMO VISTO!". Once seen the burst turns white, the text turns comic blue and says "VISTO!", with a "Desmarcar" link under it. Hover scales to 1.04 with −1° rotation; press scales to 0.97. The same burst shape (16 points by default) carries "Ficha técnica" and the "60 dias!" counter.
 
 ### Chips and Tabs
+- **Order selector:** A two-option pill group in the top HUD ("Ordem da história" / "Lançamento e fases"); the selected option fills with paper and flips text to wall. It reorders the shelf (the comics glide to their new slots) and the list (grouped by phase in release order, by tens in story order), and the choice is remembered. On phones it takes its own full-width row under the wordmark.
 - **Chip:** Pill, 1px hairline outline on 4% paper, uppercase label at 12px. Hover lifts to 10% fill and a 30% outline. Used for LISTA and ENTRAR.
 - **Tabs:** Same pill shape; the active tab fills with paper and flips text to wall, its count in a warm grey (#5d574f).
 

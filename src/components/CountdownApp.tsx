@@ -3,7 +3,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { Catalog, Extra, Film } from '@/lib/types';
-import { countdownParts, dec, dotDate, extraPath, filmPath, hm, pad, progressCode, thumb } from '@/lib/format';
+import { countdownParts, dec, dotDate, extraPath, filmPath, hm, pad, progressCode, saga, shelfOrder, thumb } from '@/lib/format';
+import type { SortMode } from '@/lib/format';
 import type { Rect, ShelfScene } from './shelf/ShelfScene';
 import { ComicPage, Offers } from './ComicPage';
 import { Check, Close } from './Burst';
@@ -90,6 +91,7 @@ function NextCard({ slot, film, held, firstVisit, finale, released, filmCount, f
 }
 
 const WELCOME_KEY = 'ac-welcomed';
+const ORDER_KEY = 'ac-order';
 
 export function CountdownApp({ catalog, initialN = null, initialExtra = null, sharedSeen }: { catalog: Catalog; initialN?: number | null; initialExtra?: number | null; sharedSeen?: number[] }) {
   const { films, finale, extras } = catalog;
@@ -116,6 +118,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
   const [openExtra, setOpenExtra] = useState<number | null>(startExtra?.id ?? null);
   const narrow = useSyncExternalStore(subscribeNarrow, narrowSnapshot, () => false);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>('story');
   const [toastHover, setToastHover] = useState(false);
   const [toastFocus, setToastFocus] = useState(false);
   const [held, setHeld] = useState<Film | null>(null);
@@ -195,6 +198,16 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
   }, []);
 
   const nextFilm = films.find(f => !watched.has(f.n)) ?? null;
+  const order = useMemo(() => shelfOrder(films.length, finale.n, sortMode), [films.length, finale.n, sortMode]);
+  // the chosen order is remembered; read after the first paint so the server's markup still matches
+  useEffect(() => {
+    const t = setTimeout(() => { try { if (localStorage.getItem(ORDER_KEY) === 'release') setSortMode('release'); } catch { /* default order */ } }, 0);
+    return () => clearTimeout(t);
+  }, []);
+  const chooseOrder = useCallback((m: SortMode) => { setSortMode(m); try { localStorage.setItem(ORDER_KEY, m); } catch { /* not remembered */ } }, []);
+  useEffect(() => { sceneRef.current?.setOrder(order); }, [order, ready]);
+  /** the issues before and after `n` in the shelf's current order */
+  const neighbors = useCallback((n: number) => { const i = order.indexOf(n); return { prev: i > 0 ? order[i - 1] : null, next: i >= 0 && i < order.length - 1 ? order[i + 1] : null }; }, [order]);
   useEffect(() => { friendRef.current = friendView; }, [friendView]);
 
   /* the 3D shelf (client only, loaded on demand) */
@@ -380,12 +393,13 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { if (welcome) closeWelcome(false); else if (phaseRef.current === 'open') closeDetail(); else if (authOpen) closeAuth(); else if (listOpen) closeList(); }
       if (phaseRef.current !== 'open' || pageN === null) return;
-      if (e.key === 'ArrowRight' && pageN < finale.n) { focusTitle.current = true; openDetail(pageN + 1); }
-      if (e.key === 'ArrowLeft' && pageN > 1) { focusTitle.current = true; openDetail(pageN - 1); }
+      const nb = neighbors(pageN);
+      if (e.key === 'ArrowRight' && nb.next) { focusTitle.current = true; openDetail(nb.next); }
+      if (e.key === 'ArrowLeft' && nb.prev) { focusTitle.current = true; openDetail(nb.prev); }
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
-  }, [closeDetail, openDetail, pageN, finale.n, authOpen, listOpen, closeAuth, closeList, welcome, closeWelcome]);
+  }, [closeDetail, openDetail, pageN, neighbors, authOpen, listOpen, closeAuth, closeList, welcome, closeWelcome]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -486,7 +500,16 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
       onMark={markNext} onOpen={openDetail} onLeaveFriend={leaveFriendView} />
   );
   // the list is in story order, which interleaves the release phases, so it is grouped in tens: landmarks that keep the numbering
-  const groups = useMemo(() => Array.from({ length: Math.ceil(films.length / 10) }, (_, i) => films.slice(i * 10, i * 10 + 10)), [films]);
+  const groups = useMemo(() => {
+    const seq = order.slice(0, films.length).map(n => films[n - 1]);
+    if (sortMode === 'release') {
+      return [...new Set(seq.map(f => f.phase))].map(p => ({ key: `p${p}`, title: `Fase ${p} · ${saga(p)}`, list: seq.filter(f => f.phase === p) }));
+    }
+    return Array.from({ length: Math.ceil(seq.length / 10) }, (_, i) => {
+      const list = seq.slice(i * 10, i * 10 + 10);
+      return { key: `n${list[0].n}`, title: `Nº ${list[0].n} a ${list[list.length - 1].n}`, list };
+    });
+  }, [films, order, sortMode]);
   const tabs = ([['films', 'Maratona', films.length], ['series', 'Séries', extras.filter(x => x.kind === 'series').length], ['xmen', 'X-Men', extras.filter(x => x.kind === 'xmen').length]] as const)
     .filter(([k, , c]) => k === 'films' || c > 0);
   // arrows, Home and End move between the tabs; only the selected one is in the Tab order
@@ -513,6 +536,10 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
       <header className="hud-top" ref={topRef} inert={behind || (narrow && listOpen)}>
         <div className="brand" data-ui>
           <span>Avengers <b>Countdown</b></span>
+          <div className="order-pick" role="group" aria-label="Ordem dos filmes">
+            <button aria-pressed={sortMode === 'story'} onClick={() => chooseOrder('story')}>Ordem da história</button>
+            <button aria-pressed={sortMode === 'release'} onClick={() => chooseOrder('release')}>Lançamento e fases</button>
+          </div>
           <nav style={{ display: 'flex', gap: 6 }}>
             <button className="chip" ref={listBtnRef} onClick={() => (listOpen ? closeList() : setListOpen(true))} aria-controls="list" aria-expanded={listOpen}>Lista</button>
             <button className="chip" ref={authBtnRef} onClick={() => (authOpen ? closeAuth() : setAuthOpen(true))} aria-expanded={authOpen} aria-controls="auth"
@@ -574,7 +601,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
         className={phase === 'open' || phase === 'closing' ? `open${phase === 'open' ? ' shown' : ''}` : undefined} data-ui>
         {pageN !== null && phase !== 'closed' && phase !== 'flying' && (
           <ComicPage n={pageN} films={films} finale={finale} watched={watched} now={now} offersCheckedAt={catalog.offersCheckedAt}
-            friend={friendView} onLeaveFriend={leaveFriendView}
+            prevN={neighbors(pageN).prev} nextN={neighbors(pageN).next} friend={friendView} onLeaveFriend={leaveFriendView}
             onToggle={toggle} onClose={() => closeDetail()} onGo={n => openDetail(n)} />
         )}
       </section>
@@ -625,10 +652,10 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
         </div>
         <div id="panel-films" role="tabpanel" aria-labelledby="tab-films" hidden={tab !== 'films'}>
           {groups.map(g => (
-            <section key={g[0].n} aria-labelledby={`grp-${g[0].n}`}>
-              <h3 className="phase-head" id={`grp-${g[0].n}`}>Nº {g[0].n} a {g[g.length - 1].n}</h3>
+            <section key={g.key} aria-labelledby={`grp-${g.key}`}>
+              <h3 className="phase-head" id={`grp-${g.key}`}>{g.title}</h3>
               <ol>
-                {g.map(f => {
+                {g.list.map(f => {
                   const seen = watched.has(f.n), isNext = nextFilm?.n === f.n;
                   return (
                     <li key={f.n}>

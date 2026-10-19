@@ -53,6 +53,8 @@ export class ShelfScene {
   private items: Item[] = [];
   private wall: THREE.Mesh | null = null;
   private ledges: THREE.Mesh[] = [];
+  /** the Nº on each shelf slot, left to right and top to bottom; empty means story order */
+  private order: number[] = [];
   private ray = new THREE.Raycaster();
   private pointer = new THREE.Vector2(9, 9);
   private pointerPx = { x: 0, y: 0 };
@@ -115,6 +117,14 @@ export class ShelfScene {
   }
   /** pop the VISTO! stamp on a comic sitting on the shelf */
   popStamp(n: number) { this.wake(); const it = this.items[n - 1]; if (it) it.stampPop = 1; }
+  /** rearrange the shelf: the comics glide to their new slots */
+  setOrder(order: number[]) {
+    this.wake();
+    this.order = order;
+    if (this.items.length) { this.layout(); this.redrawLabels(); }
+  }
+  private nAt(slot: number) { return this.order[slot] ?? slot + 1; }
+  private slotOf(n: number) { const i = this.order.indexOf(n); return i < 0 ? n - 1 : i; }
   setInsets(top: number, bottom: number) { this.insets = { top, bottom }; this.layout(); }
   /** take a comic off the shelf and open it; before the shelf is built the page hands off right away */
   open(n: number) {
@@ -229,7 +239,8 @@ export class ShelfScene {
       g.fillStyle = isNext ? '#121318' : '#f6ece0'; g.textBaseline = 'middle';
       g.font = `900 52px ${this.font}`; g.textAlign = 'left'; g.fillText('Nº ' + n, 18, h / 2 + 2);
       g.font = `700 44px ${this.font}`; g.textAlign = 'right'; g.fillText(tag, w - 18, h / 2 + 2);
-      g.font = `800 34px ${this.font}`; g.textAlign = 'center'; g.fillText('FASE ' + this.phaseOf(n), w / 2 + 6, h / 2 + 2);
+      // the premiere's long date needs the room; its color already says Fase 6
+      if (n !== this.finaleData.n) { g.font = `800 34px ${this.font}`; g.textAlign = 'center'; g.fillText('FASE ' + this.phaseOf(n), w / 2 + 6, h / 2 + 2); }
     };
   }
 
@@ -318,8 +329,8 @@ export class ShelfScene {
       const y = -r * RH - H / 2 - 0.05;
       // the ledge is cut into one segment under each comic, lacquered in that film's phase color
       for (let c = 0; c < cols; c++) {
-        const it = this.items[r * cols + c] ?? this.items[this.items.length - 1];
-        const mat = matFor(this.phaseOf(it.n));
+        const slotN = this.nAt(Math.min(r * cols + c, this.items.length - 1));
+        const mat = matFor(this.phaseOf(slotN));
         const edge = c === 0 || c === cols - 1 ? 0.35 - GX / 2 : 0;
         const segW = W + GX + edge;
         const x = -shelfW / 2 + W / 2 + c * (W + GX) + (c === 0 ? -edge / 2 : c === cols - 1 ? edge / 2 : 0);
@@ -331,8 +342,8 @@ export class ShelfScene {
       }
     }
     const x0 = -shelfW / 2 + W / 2;
-    this.items.forEach((it, i) => {
-      const c = i % cols, r = Math.floor(i / cols);
+    this.items.forEach(it => {
+      const slot = this.slotOf(it.n), c = slot % cols, r = Math.floor(slot / cols);
       it.home.set(x0 + c * (W + GX), -r * RH + 0.02, 0.06);
       it.label.position.set(it.home.x, -r * RH - H / 2 + 0.017, 0.33);
     });

@@ -14,6 +14,19 @@ export function countdownParts(target: number, now: number) {
   return { d, h, m, s };
 }
 
+/** how the shelf can be sorted: the story's own order, or the order the films reached theaters (which is also phase order) */
+export type SortMode = 'story' | 'release';
+
+/** film Nº in theatrical release order (Iron Man first, Spider-Man: Um Novo Dia last) */
+const RELEASE_ORDER = [3, 5, 4, 6, 1, 7, 9, 8, 10, 11, 13, 14, 15, 19, 12, 18, 20, 17, 22, 21, 2, 23, 26, 16, 24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38];
+
+/** every Nº (films, then the premiere) in the order the shelf shows them */
+export function shelfOrder(filmCount: number, finaleN: number, mode: SortMode): number[] {
+  const story = Array.from({ length: filmCount }, (_, i) => i + 1);
+  const films = mode === 'release' && RELEASE_ORDER.length === filmCount && RELEASE_ORDER.every(n => n >= 1 && n <= filmCount) ? RELEASE_ORDER : story;
+  return [...films, finaleN];
+}
+
 export const saga = (phase: number) => (phase <= 3 ? 'Saga do Infinito' : 'Saga do Multiverso');
 
 /** the small copy of a comic cover (384px wide), for phones and thumbnails */

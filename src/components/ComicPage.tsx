@@ -45,6 +45,9 @@ type Props = {
   now: number | null;
   offersCheckedAt: string | null;
   /** looking at a friend's shelf: read-only, with a way back to one's own */
+  /** the Nº of the issue before and after this one in the order the shelf is showing (null at the ends) */
+  prevN: number | null;
+  nextN: number | null;
   friend?: boolean;
   onLeaveFriend?(): void;
   onToggle(n: number): void;
@@ -53,7 +56,7 @@ type Props = {
 };
 
 /** The detail screen: one full comic-book page for the issue. */
-export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, friend, onLeaveFriend, onToggle, onClose, onGo }: Props) {
+export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, prevN, nextN, friend, onLeaveFriend, onToggle, onClose, onGo }: Props) {
   const powRef = useRef<HTMLButtonElement>(null);
   // the issue marked during this visit gets "Desfazer"; one that was already seen gets "Desmarcar"
   const [markedHere, setMarkedHere] = useState<number | null>(null);
@@ -74,7 +77,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, fri
 
   if (n === finale.n) {
     const [l1, l2] = titleLines(finale.title);
-    const last = films[films.length - 1];
+    const last = prevN ? films[prevN - 1] : films[films.length - 1];
     return (
       <div className="cp">
         {top}
@@ -118,7 +121,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, fri
     );
   }
 
-  const f = films[n - 1], seen = watched.has(n), prev = films[n - 2], next = films[n];
+  const f = films[n - 1], seen = watched.has(n), prev = prevN ? films[prevN - 1] : undefined, next = nextN && nextN !== finale.n ? films[nextN - 1] : undefined;
   const [l1, l2] = titleLines(f.title);
   const checked = offersCheckedAt ? new Date(offersCheckedAt).toLocaleDateString('pt-BR') : null;
   return (
