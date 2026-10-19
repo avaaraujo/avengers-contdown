@@ -535,12 +535,15 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
       <h1 className="sr-only">Avengers Countdown: maratona até {finale.title}</h1>
       <header className="hud-top" ref={topRef} inert={behind || (narrow && listOpen)}>
         <div className="brand" data-ui>
-          <span>Avengers <b>Countdown</b></span>
-          <select className="order-pick" aria-label="Ordem dos filmes" value={sortMode} onChange={e => chooseOrder(e.target.value as SortMode)}>
-            <option value="story">Ordem da história</option>
-            <option value="release">Lançamento e fases</option>
-          </select>
+          <span className="logo">Avengers <b>Countdown</b></span>
           <nav style={{ display: 'flex', gap: 6 }}>
+            <label className="chip order-pick">
+              Ordenar
+              <select aria-label="Ordenar filmes" value={sortMode} onChange={e => chooseOrder(e.target.value as SortMode)}>
+                <option value="story">Ordem da história</option>
+                <option value="release">Lançamento e fases</option>
+              </select>
+            </label>
             <button className="chip" ref={listBtnRef} onClick={() => (listOpen ? closeList() : setListOpen(true))} aria-controls="list" aria-expanded={listOpen}>Lista</button>
             <button className="chip" ref={authBtnRef} onClick={() => (authOpen ? closeAuth() : setAuthOpen(true))} aria-expanded={authOpen} aria-controls="auth"
               title={progress.user ? undefined : 'Opcional: entre para levar seu progresso a qualquer aparelho'}
