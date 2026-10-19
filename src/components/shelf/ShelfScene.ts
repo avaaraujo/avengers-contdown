@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { countdownParts, dotDate, hm, pad, thumb } from '@/lib/format';
+import { dotDate, hm, thumb } from '@/lib/format';
 
 export type Rect = { l: number; t: number; r: number; b: number };
 export type ShelfFilm = { n: number; title: string; year: number; runtime: number; cover: string };
@@ -15,7 +15,7 @@ export type ShelfCallbacks = {
 };
 
 type Item = {
-  n: number; f: ShelfFilm; g: THREE.Group; pages: THREE.Mesh; cover: THREE.Mesh; coverPivot: THREE.Group;
+  n: number; tag: string; g: THREE.Group; pages: THREE.Mesh; cover: THREE.Mesh; coverPivot: THREE.Group;
   bag: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>; stamp: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   front: THREE.MeshStandardMaterial; label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   watched: boolean; sat: number; bagOff: number; stampPop: number; hover: number; sel: number; open: number; isNext: boolean;
@@ -47,7 +47,6 @@ export class ShelfScene {
   private key = new THREE.DirectionalLight(0xffe9cc, 2.8);
   private shelf = new THREE.Group();
   private items: Item[] = [];
-  private finale: { g: THREE.Group; labelTex: RedrawTex; hit: THREE.Object3D[]; hover: number; home: THREE.Vector3 } | null = null;
   private wall: THREE.Mesh | null = null;
   private ledges: THREE.Mesh[] = [];
   private ray = new THREE.Raycaster();
@@ -62,7 +61,7 @@ export class ShelfScene {
   private cols = 8; private rows = 1; private shelfW = 1; private pxPerWorld = 100; private camZ = 10; private camBaseY = 0; private scrollRangeWorld = 0;
   private insets = { top: 200, bottom: 160 };
   private camX = 0; private camYOff = 0; private frame = 0; private simT = 0; private last = performance.now();
-  private raf = 0; private timer = 0;
+  private raf = 0;
   private font: string;
   private reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   private disposed = false;
@@ -100,7 +99,6 @@ export class ShelfScene {
     addEventListener('click', this.onClick);
     document.addEventListener('pointerleave', this.onLeave);
     addEventListener('resize', this.onResize);
-    this.timer = window.setInterval(() => this.drawFinaleLabel(), 1000);
     void this.build();
   }
 
@@ -114,12 +112,12 @@ export class ShelfScene {
   /** pop the VISTO! stamp on a comic sitting on the shelf */
   popStamp(n: number) { this.wake(); const it = this.items[n - 1]; if (it) it.stampPop = 1; }
   setInsets(top: number, bottom: number) { this.insets = { top, bottom }; this.layout(); }
-  /** take a comic off the shelf and open it; the finale hands off right away */
+  /** take a comic off the shelf and open it; before the shelf is built the page hands off right away */
   open(n: number) {
     this.wake();
     this.selected = n;
     this.cb.onHover(null, 0, 0);
-    if (n === this.finaleData.n || !this.items.length) { this.pageShown = true; this.cb.onHandoff(n, this.finaleRect()); }
+    if (!this.items[n - 1]) { this.pageShown = true; this.cb.onHandoff(n, this.centerRect()); }
   }
   /** swap the issue while the page covers the canvas */
   goTo(n: number) {
@@ -136,13 +134,13 @@ export class ShelfScene {
     this.closing = true; this.pageShown = false;
     this.update(0);
     const it = this.items[(this.selected ?? 0) - 1];
-    return it ? this.spreadRect(it) : this.finaleRect();
+    return it ? this.spreadRect(it) : this.centerRect();
   }
   /** the page is gone: close the cover and put the comic back */
   release() { this.wake(); this.selected = null; this.closing = false; this.pageShown = false; }
   dispose() {
     this.disposed = true;
-    cancelAnimationFrame(this.raf); clearInterval(this.timer);
+    cancelAnimationFrame(this.raf);
     removeEventListener('pointermove', this.onPointerMove);
     removeEventListener('click', this.onClick);
     document.removeEventListener('pointerleave', this.onLeave);
@@ -211,12 +209,13 @@ export class ShelfScene {
       panel(m, y, (w - 2 * m - gap) / 2, 110, '#f7c600'); panel(m + (w - 2 * m + gap) / 2, y, (w - 2 * m - gap) / 2, 110, '#f7c600');
     });
   }
-  private ledgeLabelDraw(f: ShelfFilm, isNext: boolean) {
+  /** Nº on the left; the runtime (or, for the premiere, its date) on the right */
+  private ledgeLabelDraw(n: number, tag: string, isNext: boolean) {
     return (g: CanvasRenderingContext2D, w: number, h: number) => {
       if (isNext) { g.fillStyle = '#f2c200'; g.fillRect(0, 0, w, h); }
       g.fillStyle = isNext ? '#121318' : '#f6ece0'; g.textBaseline = 'middle';
-      g.font = `900 52px ${this.font}`; g.textAlign = 'left'; g.fillText('Nº ' + f.n, 18, h / 2 + 2);
-      g.font = `700 44px ${this.font}`; g.textAlign = 'right'; g.fillText(hm(f.runtime), w - 18, h / 2 + 2);
+      g.font = `900 52px ${this.font}`; g.textAlign = 'left'; g.fillText('Nº ' + n, 18, h / 2 + 2);
+      g.font = `700 44px ${this.font}`; g.textAlign = 'right'; g.fillText(tag, w - 18, h / 2 + 2);
     };
   }
 
@@ -239,7 +238,9 @@ export class ShelfScene {
     const stampGeo = new THREE.PlaneGeometry(W * 0.66, W * 0.31);
     const labelGeo = new THREE.PlaneGeometry(W * 0.92, W * 0.17);
 
-    this.films.forEach((f, i) => {
+    // the premiere sits at the end of the shelf as one more issue, still in its bag
+    const issues = [...this.films.map(f => ({ n: f.n, tag: hm(f.runtime) })), { n: this.finaleData.n, tag: dotDate(this.finaleData.premiereAt) }];
+    issues.forEach((f, i) => {
       const front = this.shadedMaterial(texes[i]);
       const inside = new THREE.MeshStandardMaterial({ map: texes[i], roughness: 0.75 }); // the splash seen when the cover swings open
       const g = new THREE.Group();
@@ -253,29 +254,13 @@ export class ShelfScene {
       cover.add(stamp); coverPivot.add(cover);
       const bag = new THREE.Mesh(bagGeo, bagMat.clone()); bag.position.z = T / 2 + CT + 0.016; bag.renderOrder = 2;
       g.add(pages, coverPivot, bag); this.shelf.add(g);
-      const label = new THREE.Mesh(labelGeo, new THREE.MeshBasicMaterial({ map: canvasTex(512, 96, this.ledgeLabelDraw(f, false)), transparent: true, toneMapped: false }));
+      const label = new THREE.Mesh(labelGeo, new THREE.MeshBasicMaterial({ map: canvasTex(512, 96, this.ledgeLabelDraw(f.n, f.tag, false)), transparent: true, toneMapped: false }));
       this.shelf.add(label);
       const seen = this.watched.has(f.n);
-      this.items.push({ n: f.n, f, g, pages, cover, coverPivot, bag, stamp, front, label, watched: seen,
+      this.items.push({ n: f.n, tag: f.tag, g, pages, cover, coverPivot, bag, stamp, front, label, watched: seen,
         sat: seen ? 1 : 0, bagOff: seen ? 1 : 0, stampPop: 0, hover: 0, sel: 0, open: 0, isNext: false, home: new THREE.Vector3() });
     });
 
-    // the premiere: a graded slab at the end of the shelf, the countdown on its label
-    const fg = new THREE.Group();
-    // transmission makes three.js render the whole scene a second time, too heavy for phones: fake the glass there
-    const slab = new THREE.Mesh(new THREE.BoxGeometry(W * 1.22, H * 1.36, 0.1), this.lite
-      ? new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.16, roughness: 0.05, depthWrite: false, envMapIntensity: 2.4 })
-      : new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 1, thickness: 0.12, roughness: 0.06, ior: 1.45, clearcoat: 1 }));
-    slab.castShadow = true; slab.userData.n = this.finaleData.n;
-    const inner = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshStandardMaterial({ map: texes[texes.length - 1], roughness: 0.5 }));
-    inner.position.set(0, -H * 0.08, 0); inner.userData.n = this.finaleData.n;
-    const labelTex = canvasTex(600, 230, () => {});
-    const lab = new THREE.Mesh(new THREE.PlaneGeometry(W * 1.12, (W * 1.12 * 230) / 600), new THREE.MeshBasicMaterial({ map: labelTex, toneMapped: false }));
-    lab.position.set(0, H * 0.55, 0.02); lab.userData.n = this.finaleData.n;
-    fg.add(slab, inner, lab);
-    if (!this.lite) { const glow = new THREE.PointLight(0xffd9a0, 6, 3.2, 1.6); glow.position.set(0, 0.2, 0.9); fg.add(glow); } fg.scale.setScalar(1.12); this.shelf.add(fg);
-    this.finale = { g: fg, labelTex, hit: [slab, inner, lab], hover: 0, home: new THREE.Vector3() };
-    this.drawFinaleLabel();
     this.layout();
     this.redrawLabels();
     this.update(0.016);
@@ -291,38 +276,19 @@ export class ShelfScene {
     this.raf = requestAnimationFrame(loop);
   }
 
-  private drawFinaleLabel() {
-    if (!this.finale) return;
-    const c = countdownParts(this.finaleData.premiereAt, Date.now());
-    const font = this.font;
-    this.finale.labelTex.userData.redraw((g, w, h) => {
-      g.fillStyle = '#e2231a'; g.fillRect(0, 0, w, h);
-      g.fillStyle = '#f2c200'; g.fillRect(0, 0, w, 44);
-      g.fillStyle = '#121318'; g.font = `800 26px ${font}`; g.textBaseline = 'middle'; g.fillText(`${Date.now() >= this.finaleData.premiereAt ? 'ESTREOU' : 'ESTREIA'} · ${dotDate(this.finaleData.premiereAt)} · Nº ${this.finaleData.n}`, 18, 23);
-      g.fillStyle = '#fff'; g.textBaseline = 'alphabetic';
-      if (Date.now() >= this.finaleData.premiereAt) {
-        g.font = `900 78px ${font}`; g.fillText('EM CARTAZ', 18, 150);
-      } else {
-        g.font = `900 96px ${font}`; g.fillText(String(c.d), 18, 150);
-        const dw = g.measureText(String(c.d)).width;
-        g.font = `800 34px ${font}`; g.fillText('DIAS', 30 + dw, 110); g.fillText(`${pad(c.h)}:${pad(c.m)}:${pad(c.s)}`, 30 + dw, 150);
-      }
-      g.font = `700 22px ${font}`; g.fillText(this.finaleData.title.toUpperCase(), 18, 200);
-    });
-  }
   private redrawLabels() {
     for (const it of this.items) {
       it.isNext = it.n === this.nextN;
-      (it.label.material.map as RedrawTex).userData.redraw(this.ledgeLabelDraw(it.f, it.isNext));
+      (it.label.material.map as RedrawTex).userData.redraw(this.ledgeLabelDraw(it.n, it.tag, it.isNext));
     }
   }
 
   /* ---------- layout & camera ---------- */
   private layout = () => {
-    if (!this.finale) return;
+    if (!this.items.length) return;
     const w = innerWidth, h = innerHeight;
     const cols = (this.cols = w < 560 ? 3 : w < 900 ? 5 : w < 1300 ? 7 : 8);
-    const rows = (this.rows = Math.ceil((this.films.length + 2) / cols));
+    const rows = (this.rows = Math.ceil(this.items.length / cols));
     const shelfW = (this.shelfW = cols * W + (cols - 1) * GX);
     this.ledges.forEach(l => this.shelf.remove(l)); this.ledges = [];
     if (this.wall) this.shelf.remove(this.wall);
@@ -343,9 +309,6 @@ export class ShelfScene {
       it.home.set(x0 + c * (W + GX), -r * RH + 0.02, 0.06);
       it.label.position.set(it.home.x, -r * RH - H / 2 + 0.017, 0.33);
     });
-    let fc = this.films.length % cols, fr = Math.floor(this.films.length / cols);
-    if (fc === cols - 1) { fc = 0; fr++; }
-    this.finale.home.set(x0 + fc * (W + GX) + (W + GX) / 2, -fr * RH + 0.2, 0.1);
 
     const cam = this.camera;
     cam.aspect = w / h; cam.updateProjectionMatrix();
@@ -373,10 +336,7 @@ export class ShelfScene {
     return { l, t, r, b };
   }
   private spreadRect(it: Item) { return this.rectOf([[-1.5 * W, -H / 2, T / 2], [-1.5 * W, H / 2, T / 2], [0.5 * W, -H / 2, T / 2], [0.5 * W, H / 2, T / 2]], it.g); }
-  private finaleRect(): Rect {
-    if (!this.finale) return { l: innerWidth / 2 - 40, r: innerWidth / 2 + 40, t: innerHeight / 2 - 60, b: innerHeight / 2 + 60 };
-    return this.rectOf([[-W * 0.61, -H * 0.68, 0], [-W * 0.61, H * 0.68, 0], [W * 0.61, -H * 0.68, 0], [W * 0.61, H * 0.68, 0]], this.finale.g);
-  }
+  private centerRect(): Rect { return { l: innerWidth / 2 - 40, r: innerWidth / 2 + 40, t: innerHeight / 2 - 60, b: innerHeight / 2 + 60 }; }
 
   /* ---------- interaction ---------- */
   private overUI = (e: Event) => !!(e.target as Element | null)?.closest?.('[data-ui]');
@@ -399,7 +359,6 @@ export class ShelfScene {
   private pick() {
     this.ray.setFromCamera(this.pointer, this.camera);
     const targets: THREE.Object3D[] = this.items.flatMap(i => [i.cover, i.pages]);
-    if (this.finale) targets.push(...this.finale.hit);
     const n = (this.ray.intersectObjects(targets, false)[0]?.object.userData.n as number | undefined) ?? null;
     const changed = n !== this.hovered;
     this.hovered = n;
@@ -409,7 +368,7 @@ export class ShelfScene {
 
   /* ---------- animation ---------- */
   private update(dt: number) {
-    if (!this.finale) return;
+    if (!this.items.length) return;
     this.simT += dt; const t = this.simT;
     const rm = this.reduceMotion, sp = rm ? 60 : 9, cam = this.camera, sel = this.selected;
     const sy = scrollY / this.pxPerWorld;
@@ -475,11 +434,6 @@ export class ShelfScene {
         this.cb.onHandoff(it.n, this.spreadRect(it));
       }
     }
-    const fin = this.finale;
-    fin.hover = damp(fin.hover, this.hovered === this.finaleData.n && sel === null ? 1 : 0, 12, dt);
-    v.copy(fin.home); v.z += fin.hover * 0.2;
-    fin.g.position.lerp(v, 1 - Math.exp(-sp * dt));
-    fin.g.rotation.x = damp(fin.g.rotation.x, -0.08 + fin.hover * 0.06, sp, dt);
 
     if (!this.pageShown) {
       if (this.lite && ++this.shadowTick % 2 === 0) this.renderer.shadowMap.needsUpdate = true;

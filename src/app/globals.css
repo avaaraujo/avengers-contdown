@@ -281,7 +281,8 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
   .next .t { font-size: 15px; }
   .next .actions { margin-top: 4px; }
   .next .btn { padding: 6px 10px; font-size: 12px; }
-  .count .days { font-size: 72px; }
+  .count { gap: 12px; }
+  .count .days { font-size: 108px; line-height: .74; margin-bottom: .05em; } /* the digits span the text block beside them, top of "dias" to the last baseline */
   .count .clock { font-size: 24px; }
   .count .to { font-size: 12px; margin-top: 4px; }
   .hud-bottom { padding: 22px 16px calc(10px + env(safe-area-inset-bottom)); }
