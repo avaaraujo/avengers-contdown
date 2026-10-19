@@ -48,3 +48,7 @@ next-env.d.ts
 /.impeccable/questions/
 
 .vercel
+
+# impeccable: local hooks and the per-platform engine binary (reinstall with npx impeccable install)
+.claude/settings.local.json
+.claude/skills/impeccable/scripts/bin/
