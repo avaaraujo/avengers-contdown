@@ -64,7 +64,7 @@ function NextCard({ slot, film, held, firstVisit, finale, released, filmCount, f
     );
   }
   return (
-    <div className={`next ${place}${film ? '' : ' done'}`} data-ui>
+    <div className={`next ${place}${film ? '' : ' done'}${film && firstVisit ? ' first' : ''}`} data-ui>
       {film ? (
         <>
           <img src={thumb(film.cover)} alt="" />
@@ -536,10 +536,10 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
       <header className="hud-top" ref={topRef} inert={behind || (narrow && listOpen)}>
         <div className="brand" data-ui>
           <span>Avengers <b>Countdown</b></span>
-          <div className="order-pick" role="group" aria-label="Ordem dos filmes">
-            <button aria-pressed={sortMode === 'story'} onClick={() => chooseOrder('story')}>Ordem da história</button>
-            <button aria-pressed={sortMode === 'release'} onClick={() => chooseOrder('release')}>Lançamento e fases</button>
-          </div>
+          <select className="order-pick" aria-label="Ordem dos filmes" value={sortMode} onChange={e => chooseOrder(e.target.value as SortMode)}>
+            <option value="story">Ordem da história</option>
+            <option value="release">Lançamento e fases</option>
+          </select>
           <nav style={{ display: 'flex', gap: 6 }}>
             <button className="chip" ref={listBtnRef} onClick={() => (listOpen ? closeList() : setListOpen(true))} aria-controls="list" aria-expanded={listOpen}>Lista</button>
             <button className="chip" ref={authBtnRef} onClick={() => (authOpen ? closeAuth() : setAuthOpen(true))} aria-expanded={authOpen} aria-controls="auth"
