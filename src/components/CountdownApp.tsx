@@ -9,12 +9,17 @@ import { ComicPage, Offers } from './ComicPage';
 import { Check, Close } from './Burst';
 import { LOCAL_KEY, useProgress } from './useProgress';
 import { AuthPanel } from './AuthPanel';
+import { trapTab } from './focus';
 
 type Phase = 'closed' | 'flying' | 'open' | 'closing';
 const subscribeClock = (tick: () => void) => { const t = setInterval(tick, 1000); return () => clearInterval(t); };
 const clockSnapshot = () => Math.floor(Date.now() / 1000) * 1000;
 const insetFor = (r: Rect) =>
   `inset(${Math.max(0, r.t)}px ${Math.max(0, innerWidth - r.r)}px ${Math.max(0, innerHeight - r.b)}px ${Math.max(0, r.l)}px round 6px)`;
+
+const NARROW = '(max-width: 860px)';
+const subscribeNarrow = (cb: () => void) => { const m = matchMedia(NARROW); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb); };
+const narrowSnapshot = () => matchMedia(NARROW).matches;
 
 type Tab = 'films' | 'series' | 'xmen';
 
@@ -109,6 +114,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
   const [listOpen, setListOpen] = useState(startExtra !== null);
   const [tab, setTab] = useState<Tab>(startExtra?.kind ?? 'films');
   const [openExtra, setOpenExtra] = useState<number | null>(startExtra?.id ?? null);
+  const narrow = useSyncExternalStore(subscribeNarrow, narrowSnapshot, () => false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [toastHover, setToastHover] = useState(false);
   const [toastFocus, setToastFocus] = useState(false);
@@ -134,6 +140,8 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
   const listCloseRef = useRef<HTMLButtonElement>(null);
   const authBtnRef = useRef<HTMLButtonElement>(null);
   const titled = useRef(false);
+  const authOpenRef = useRef(false);
+  const closeAuthRef = useRef<() => void>(() => {});
   const nextBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
   /** the main action of whichever Próximo card is on screen */
   const mainAction = useCallback(() => nextBtnRefs.current.find(b => b && b.getClientRects().length > 0) ?? listBtnRef.current, []);
@@ -202,7 +210,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
         {
           onReady: () => setReady(true),
           onHover: (n, x, y) => setTag(prev => (n === null ? (prev ? null : prev) : prev?.n === n && prev.x === x && prev.y === y ? prev : { n, x, y })),
-          onPick: n => openDetailRef.current(n),
+          onPick: n => { if (authOpenRef.current) closeAuthRef.current(); else openDetailRef.current(n); },
           onHandoff: (n, rect) => { handoffRect.current = rect; setPageN(n); go('open'); },
           onTrackHeight: px => setTrackH(px),
         });
@@ -312,9 +320,11 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
   const closeList = useCallback(() => {
     setListOpen(false);
     if (location.pathname.startsWith('/extra/')) history.replaceState(history.state, '', '/');
-    listBtnRef.current?.focus({ preventScroll: true });
+    // on phones the HUD is inert behind the open list: focus waits for it to wake
+    requestAnimationFrame(() => listBtnRef.current?.focus({ preventScroll: true }));
   }, []);
   const closeAuth = useCallback(() => { setAuthOpen(false); authBtnRef.current?.focus({ preventScroll: true }); }, []);
+  useEffect(() => { authOpenRef.current = authOpen; closeAuthRef.current = closeAuth; }, [authOpen, closeAuth]);
   useEffect(() => { if (listOpen && !startExtra) listCloseRef.current?.focus({ preventScroll: true }); }, [listOpen, startExtra]);
 
   /* deep link on load, and the browser's back/forward buttons */
@@ -429,6 +439,13 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
     : released ? `${sinceDays === 1 ? 'dia' : 'dias'} em cartaz`
     : cd && cd.d === 0 ? 'estreia em'
     : cd && cd.d === 1 ? 'dia' : 'dias';
+  // screen readers get one sentence that only changes once a minute, not three pieces that tick every second
+  const minuteNow = now === null ? null : Math.floor(now / 6e4) * 6e4;
+  const cdMin = minuteNow === null ? null : countdownParts(finale.premiereAt, minuteNow);
+  const plural = (v: number, one: string, many: string) => `${v} ${v === 1 ? one : many}`;
+  const countdownSentence = cdMin === null ? '' : premiereDay ? `${finale.title} estreia hoje nos cinemas do Brasil.`
+    : released ? `${finale.title} está nos cinemas do Brasil há ${plural(sinceDays, 'dia', 'dias')}.`
+    : `Faltam ${plural(cdMin.d, 'dia', 'dias')}, ${plural(cdMin.h, 'hora', 'horas')} e ${plural(cdMin.m, 'minuto', 'minutos')} para a estreia de ${finale.title}, em ${dotDate(finale.premiereAt)}.`;
   const days = now === null ? null : Math.max((finale.premiereAt - now) / 864e5, 0.01);
   // the legend has a short form for phones, where four stats share one row
   let pace = '—', paceK = 'filmes por dia', paceShort = 'filmes por dia';
@@ -446,6 +463,21 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
       filmCount={films.length} friendSeen={friendView ? seenFilms.length : null} setBtn={setNextBtn}
       onMark={markNext} onOpen={openDetail} onLeaveFriend={leaveFriendView} />
   );
+  // the list is in story order, which interleaves the release phases, so it is grouped in tens: landmarks that keep the numbering
+  const groups = useMemo(() => Array.from({ length: Math.ceil(films.length / 10) }, (_, i) => films.slice(i * 10, i * 10 + 10)), [films]);
+  const tabs = ([['films', 'Maratona', films.length], ['series', 'Séries', extras.filter(x => x.kind === 'series').length], ['xmen', 'X-Men', extras.filter(x => x.kind === 'xmen').length]] as const)
+    .filter(([k, , c]) => k === 'films' || c > 0);
+  // arrows, Home and End move between the tabs; only the selected one is in the Tab order
+  const onTabKeys = (e: React.KeyboardEvent) => {
+    const keys = tabs.map(t => t[0]);
+    const at = keys.indexOf(tab);
+    const to = e.key === 'ArrowRight' ? (at + 1) % keys.length : e.key === 'ArrowLeft' ? (at - 1 + keys.length) % keys.length
+      : e.key === 'Home' ? 0 : e.key === 'End' ? keys.length - 1 : -1;
+    if (to < 0) return;
+    e.preventDefault();
+    setTab(keys[to]);
+    document.getElementById(`tab-${keys[to]}`)?.focus();
+  };
   const tagFilm = tag ? (tag.n === finale.n ? null : films[tag.n - 1]) : null;
   // while the comic page is up, everything behind it is out of reach for keyboard and screen readers
   const behind = phase !== 'closed' || welcome;
@@ -455,31 +487,35 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
       <canvas id="scene" ref={canvasRef} aria-hidden="true" />
       <div id="track" style={{ height: trackH || undefined }} />
 
-      <header className="hud-top" ref={topRef} inert={behind}>
+      <h1 className="sr-only">Avengers Countdown: maratona até {finale.title}</h1>
+      <header className="hud-top" ref={topRef} inert={behind || (narrow && listOpen)}>
         <div className="brand" data-ui>
           <span>Avengers <b>Countdown</b></span>
           <nav style={{ display: 'flex', gap: 6 }}>
             <button className="chip" ref={listBtnRef} onClick={() => (listOpen ? closeList() : setListOpen(true))} aria-controls="list" aria-expanded={listOpen}>Lista</button>
-            <button className="chip" ref={authBtnRef} onClick={() => (authOpen ? closeAuth() : setAuthOpen(true))} aria-expanded={authOpen} aria-controls="auth">
+            <button className="chip" ref={authBtnRef} onClick={() => (authOpen ? closeAuth() : setAuthOpen(true))} aria-expanded={authOpen} aria-controls="auth"
+              title={progress.user ? undefined : 'Opcional: entre para levar seu progresso a qualquer aparelho'}
+              aria-label={progress.user ? undefined : 'Entrar (opcional) para sincronizar o progresso'}>
               {progress.user ? 'Conta' : 'Entrar'}
             </button>
           </nav>
         </div>
         <div className="count" data-ui>
-          <div className="days num">{todayWord ? 'Hoje' : released ? sinceDays : cd ? cd.d : '--'}</div>
+          <p className="sr-only">{countdownSentence}</p>
+          <div className="days num" aria-hidden="true">{todayWord ? 'Hoje' : released ? sinceDays : cd ? cd.d : '--'}</div>
           <div className="rest">
-            <div className="unit">{countUnit}</div>
-            <div className="clock num">{released ? (premiereDay ? dotDate(finale.premiereAt) : `desde ${dotDate(finale.premiereAt)}`) : cd ? `${pad(cd.h)}:${pad(cd.m)}:${pad(cd.s)}` : '--:--:--'}</div>
+            <div className="unit" aria-hidden="true">{countUnit}</div>
+            <div className="clock num" aria-hidden="true">{released ? (premiereDay ? dotDate(finale.premiereAt) : `desde ${dotDate(finale.premiereAt)}`) : cd ? `${pad(cd.h)}:${pad(cd.m)}:${pad(cd.s)}` : '--:--:--'}</div>
             {released
-              ? <div className="to">{premiereDay ? <><strong>{finale.title}</strong><br />estreou hoje no Brasil</> : <><strong>{finale.title}</strong><br />nos cinemas do Brasil</>}</div>
-              : <div className="to">até <strong>{finale.title}</strong><br />estreia no Brasil · {dotDate(finale.premiereAt)}</div>}
+              ? <div className="to" aria-hidden="true">{premiereDay ? <><strong>{finale.title}</strong><br />estreou hoje no Brasil</> : <><strong>{finale.title}</strong><br />nos cinemas do Brasil</>}</div>
+              : <div className="to" aria-hidden="true">até <strong>{finale.title}</strong><br />estreia no Brasil · {dotDate(finale.premiereAt)}</div>}
             {finale.ticketsUrl && <a className="tickets" href={finale.ticketsUrl} target="_blank" rel="noopener">Comprar ingresso</a>}
           </div>
         </div>
         {nextCardFor(0)}
       </header>
 
-      <footer className="hud-bottom" ref={botRef} inert={behind}>
+      <footer className="hud-bottom" ref={botRef} inert={behind || (narrow && listOpen)}>
         {nextCardFor(1)}
         <div className="stats" data-ui>
           <div className="stat"><div className="v num">{hm(seenMin)}</div><div className="k">assistidas</div></div>
@@ -494,7 +530,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
           <div className="pct num">{seenFilms.length} de {films.length}</div>
           {seenFilms.length > 0 && !friendView && <button className="chip share" onClick={() => void share()}>Compartilhar</button>}
         </div>
-        <div className="demo" data-ui role="status">
+        <div className="demo" data-ui>
           {progress.error
             ? <span className="err">{progress.error}</span>
             : progress.user
@@ -521,60 +557,90 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
         )}
       </section>
 
-      <nav id="list" className={listOpen ? 'open' : undefined} aria-label="Todos os filmes em ordem cronológica" data-ui inert={behind || (!listOpen && !noWebgl)}>
+      <nav id="list" className={listOpen ? 'open' : undefined} aria-label="Todos os filmes em ordem cronológica" data-ui inert={behind || (!listOpen && !noWebgl)}
+        onKeyDown={e => { if (narrow && listOpen) trapTab(e, e.currentTarget); }}>
         <header>
           <h2>Ordem cronológica</h2>
           <button className="icon-btn" ref={listCloseRef} onClick={closeList} aria-label="Fechar lista"><Close /></button>
         </header>
-        <div className="tabs" role="tablist" aria-label="Seções da lista">
-          {([['films', 'Maratona', films.length], ['series', 'Séries', extras.filter(x => x.kind === 'series').length], ['xmen', 'X-Men', extras.filter(x => x.kind === 'xmen').length]] as const)
-            .filter(([k, , c]) => k === 'films' || c > 0)
-            .map(([k, label, c]) => (
-              <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : undefined} onClick={() => setTab(k)}>{label} <small>{c}</small></button>
-            ))}
-        </div>
-        {tab !== 'films' && (
-          <ul className="extras">
-            <li className="extras-note">Extras ficam fora da conta do countdown: são para quem quer ir além da fila principal.</li>
-            {extras.filter(x => x.kind === tab).map(x => {
-              const seen = watched.has(x.key), isOpen = openExtra === x.id;
-              return (
-                <li key={x.id} className={isOpen ? 'open' : undefined}>
-                  <div className="xrow">
-                    <button className="xhead" aria-expanded={isOpen} onClick={() => expandExtra(isOpen ? null : x)}>
-                      <span className="lt">{x.title}<small>{x.year} · {x.runtime ? hm(x.runtime) : x.note}</small></span>
-                    </button>
-                    <button className={`xcheck${seen ? ' seen' : ''}`} aria-pressed={seen} aria-label={`${seen ? 'Desmarcar' : 'Marcar como visto'}: ${x.title}`} onClick={() => toggleWithUndo(x, x.key)}>
-                      <span className="ck"><Check /></span>
-                    </button>
-                  </div>
-                  {isOpen && (
-                    <div className="xbody">
-                      <p>{x.synopsis}</p>
-                      <p className="xmeta">{x.kind === 'series' ? 'Criação' : 'Direção'}: {x.director ?? '—'}{x.runtime && x.note ? ` · ${x.note}` : ''}{x.runtime ? '' : x.note ? ` · ${x.note}` : ''}</p>
-                      <div className="where">
-                        <Offers offers={x.offers} empty={catalog.tmdb ? 'Não está em nenhum streaming no Brasil agora.' : 'Streaming ainda sem dados para este título.'} />
-                      </div>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <ol hidden={tab !== 'films'}>
-          {films.map(f => (
-            <li key={f.n}>
-              <button className={watched.has(f.n) ? 'seen' : undefined} onClick={() => openDetail(f.n)}
-                aria-label={`Nº ${f.n}, ${f.title}, ${watched.has(f.n) ? 'visto' : 'não visto'}`}>
-                <span className="n num">{pad(f.n)}</span>
-                <img src={thumb(f.cover)} alt="" loading="lazy" />
-                <span className="lt">{f.title}<small>{f.year} · {hm(f.runtime)}</small></span>
-                <span className="ck"><Check /></span>
-              </button>
-            </li>
+        <p className="list-sum num">{seenFilms.length} de {films.length} · {hm(seenMin)} vistas</p>
+        <div className="tabs" role="tablist" aria-label="Seções da lista" onKeyDown={onTabKeys}>
+          {tabs.map(([k, label, c]) => (
+            <button key={k} role="tab" id={`tab-${k}`} aria-selected={tab === k} aria-controls={k === 'films' ? 'panel-films' : 'panel-extras'}
+              tabIndex={tab === k ? 0 : -1} className={tab === k ? 'on' : undefined} onClick={() => setTab(k)}>{label} <small>{c}</small></button>
           ))}
-        </ol>
+        </div>
+        <div id="panel-extras" role="tabpanel" aria-labelledby={`tab-${tab}`} hidden={tab === 'films'}>
+          {tab !== 'films' && (
+            <ul className="extras">
+              <li className="extras-note">Extras ficam fora da conta do countdown: são para quem quer ir além da fila principal.</li>
+              {extras.filter(x => x.kind === tab).map(x => {
+                const seen = watched.has(x.key), isOpen = openExtra === x.id;
+                return (
+                  <li key={x.id} className={isOpen ? 'open' : undefined}>
+                    <div className="xrow">
+                      <button className="xhead" aria-expanded={isOpen} onClick={() => expandExtra(isOpen ? null : x)}>
+                        <span className="lt">{x.title}<small>{x.year} · {x.runtime ? hm(x.runtime) : x.note}</small></span>
+                      </button>
+                      <button className={`xcheck${seen ? ' seen' : ''}`} aria-pressed={seen} aria-label={`${seen ? 'Desmarcar' : 'Marcar como visto'}: ${x.title}`} onClick={() => toggleWithUndo(x, x.key)}>
+                        <span className="ck"><Check /></span>
+                      </button>
+                    </div>
+                    {isOpen && (
+                      <div className="xbody">
+                        <p>{x.synopsis}</p>
+                        <p className="xmeta">{x.kind === 'series' ? 'Criação' : 'Direção'}: {x.director ?? '—'}{x.runtime && x.note ? ` · ${x.note}` : ''}{x.runtime ? '' : x.note ? ` · ${x.note}` : ''}</p>
+                        <div className="where">
+                          <Offers offers={x.offers} empty={catalog.tmdb ? 'Não está em nenhum streaming no Brasil agora.' : 'Streaming ainda sem dados para este título.'} />
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+        <div id="panel-films" role="tabpanel" aria-labelledby="tab-films" hidden={tab !== 'films'}>
+          {groups.map(g => (
+            <section key={g[0].n} aria-labelledby={`grp-${g[0].n}`}>
+              <h3 className="phase-head" id={`grp-${g[0].n}`}>Nº {g[0].n} a {g[g.length - 1].n}</h3>
+              <ol>
+                {g.map(f => {
+                  const seen = watched.has(f.n), isNext = nextFilm?.n === f.n;
+                  return (
+                    <li key={f.n}>
+                      <div className={`frow${seen ? ' seen' : ''}`}>
+                        <button className="fopen" onClick={() => openDetail(f.n)} aria-label={`Nº ${f.n}, ${f.title}${isNext ? ', o próximo' : ''}`}>
+                          <span className="n num">{pad(f.n)}</span>
+                          <img src={thumb(f.cover)} alt="" loading="lazy" />
+                          <span className="lt">{f.title}{isNext && <em className="next-tag">Próximo</em>}<small>{f.year} · {hm(f.runtime)}</small></span>
+                        </button>
+                        <button className={`xcheck${seen ? ' seen' : ''}`} aria-pressed={seen} aria-label={`${seen ? 'Desmarcar' : 'Marcar como visto'}: ${f.title}`} onClick={() => toggleWithUndo(f, f.n)}>
+                          <span className="ck"><Check /></span>
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
+          <section aria-labelledby="phase-premiere">
+            <h3 className="phase-head" id="phase-premiere">A estreia</h3>
+            <ol>
+              <li>
+                <div className="frow">
+                  <button className="fopen" onClick={() => openDetail(finale.n)} aria-label={`Nº ${finale.n}, ${finale.title}, a estreia`}>
+                    <span className="n num">{pad(finale.n)}</span>
+                    <img src={thumb(finale.cover)} alt="" loading="lazy" />
+                    <span className="lt">{finale.title}<small>estreia {dotDate(finale.premiereAt)}</small></span>
+                  </button>
+                </div>
+              </li>
+            </ol>
+          </section>
+        </div>
         {ownWatched.size > 0 && !friendView && (
           <div className="list-foot">
             <button className="btn btn-light" onClick={resetWithUndo}>Zerar progresso</button>

@@ -129,7 +129,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, fri
           <dl>
             <div><dt>Ano</dt><dd className="red">{f.year}</dd></div>
             <div><dt>Duração</dt><dd>{hm(f.runtime)}</dd></div>
-            <div><dt>Fase</dt><dd><span style={{ color: 'var(--c-red)' }}>{f.phase}</span> · {saga(f.phase)}</dd></div>
+            <div><dt>Fase</dt><dd><span className="red">{f.phase}</span> · {saga(f.phase)}</dd></div>
             <div><dt>Direção</dt><dd>{f.director ?? '—'}</dd></div>
             <div><dt>Gibi na estante</dt><dd>{f.comic}</dd></div>
           </dl>

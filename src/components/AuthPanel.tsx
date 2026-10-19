@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SessionUser } from './useProgress';
 import { Close } from './Burst';
+import { trapTab } from './focus';
 
 type Props = {
   open: boolean;
@@ -23,10 +24,9 @@ export function AuthPanel({ open, onClose, user, signIn, signOut }: Props) {
 
   if (!open) return null;
   return (
-    <div id="auth" className="auth" role="dialog" aria-labelledby="auth-title" data-ui>
+    <div id="auth" className="auth" role="dialog" aria-labelledby="auth-title" data-ui onKeyDown={e => trapTab(e, e.currentTarget)}>
       <div className="auth-head">
-        <h2 id="auth-title">{user ? 'Sua conta' : 'Entrar'}</h2>
-        <button className="icon-btn" onClick={onClose} aria-label="Fechar"><Close /></button>
+        <h2 id="auth-title">{user ? 'Sua conta' : 'Entrar (opcional)'}</h2>
       </div>
       {user ? (
         <>
@@ -52,6 +52,8 @@ export function AuthPanel({ open, onClose, user, signIn, signOut }: Props) {
           <button className="btn btn-yellow" type="submit" disabled={state === 'sending'}>{state === 'sending' ? 'Enviando…' : 'Enviar link de acesso'}</button>
         </form>
       )}
+      {/* last in the DOM so Tab goes field, send, close; the panel keeps focus until it closes */}
+      <button className="icon-btn" onClick={onClose} aria-label="Fechar"><Close /></button>
     </div>
   );
 }

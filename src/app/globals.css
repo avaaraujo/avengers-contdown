@@ -29,6 +29,7 @@ body {
 :focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; border-radius: 2px; }
 button { font: inherit; color: inherit; }
 .num { font-variant-numeric: tabular-nums; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
 #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
 #track { position: relative; z-index: 0; pointer-events: none; }
@@ -208,8 +209,8 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
 .ficha dl div:last-child { border-bottom: 0; }
 .ficha dt { font-weight: 800; font-size: 15px; }
 .ficha dt::after { content: ":"; }
-.ficha dd { margin: 0; font-family: var(--font-bangers), sans-serif; font-size: 23px; letter-spacing: .03em; color: var(--c-blue); line-height: 1.05; }
-.ficha dd.red { color: var(--c-red); }
+.ficha dd { margin: 0; font-family: var(--font-bangers), sans-serif; font-size: 24px; letter-spacing: .03em; color: var(--c-blue); line-height: 1.05; }
+.ficha dd.red, .ficha dd .red { color: var(--c-red); -webkit-text-stroke: 1.2px var(--ink); paint-order: stroke fill; }
 .where { padding: 12px 16px 14px; background: #fff; }
 .where h3 { margin: 0 0 10px; font-size: 26px; color: var(--ink); -webkit-text-stroke: 0; }
 .where .grp { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 8px; }
@@ -270,8 +271,9 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
 #list header { display: flex; justify-content: space-between; align-items: center; padding: 0 20px 12px; }
 #list h2 { margin: 0; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
 #list ol { list-style: none; margin: 0; padding: 0; }
-#list li button { width: 100%; display: grid; grid-template-columns: 34px 40px 1fr auto; gap: 12px; align-items: center; padding: 8px 20px; background: none; border: 0; border-top: 1px solid var(--line); cursor: pointer; text-align: left; }
-#list li button:hover { background: rgba(242,234,219,.05); }
+#list .frow { display: grid; grid-template-columns: 1fr auto; align-items: center; border-top: 1px solid var(--line); }
+#list .fopen { width: 100%; min-height: 56px; display: grid; grid-template-columns: 34px 40px 1fr; gap: 12px; align-items: center; padding: 8px 8px 8px 20px; background: none; border: 0; cursor: pointer; text-align: left; }
+#list .fopen:hover { background: rgba(242,234,219,.05); }
 #list .n { color: var(--muted); font-weight: 800; font-variation-settings: "wdth" 70; }
 #list img { width: 40px; aspect-ratio: 2/3; object-fit: cover; border-radius: 2px; }
 #list .lt { font-weight: 700; line-height: 1.25; font-size: 14px; }
@@ -358,7 +360,8 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
   background: var(--wall-2); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px 18px;
   box-shadow: 0 20px 50px rgba(0,0,0,.5);
 }
-.auth-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.auth-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; padding-right: 48px; min-height: 44px; }
+.auth > .icon-btn { position: absolute; top: 10px; right: 12px; }
 .auth h2 { margin: 0; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
 .auth p { margin: 8px 0 14px; color: var(--muted); font-size: 14px; line-height: 1.45; }
 .auth p strong { color: var(--paper); }
@@ -378,13 +381,11 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
 .err { color: #ff8a80; }
 .auth .err { margin: -4px 0 12px; }
 .icon-btn { color: var(--paper); }
-#list li button.seen .ck { background: var(--red); border-color: var(--red); }
-#list li button.seen .ck svg { opacity: 1; }
 
 /* ---------- list tabs and extras ---------- */
 .tabs { display: flex; gap: 6px; padding: 0 20px 12px; }
 .tabs button { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
-.tabs button small { color: var(--muted); margin-left: 2px; }
+.tabs button small { color: var(--muted); margin-left: 2px; font-size: 12px; }
 .tabs button.on { background: var(--paper); color: var(--wall); border-color: var(--paper); }
 .tabs button.on small { color: #5d574f; }
 .extras { list-style: none; margin: 0; padding: 0; }
@@ -394,7 +395,7 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
 .xrow { display: grid; grid-template-columns: 1fr auto; align-items: center; }
 #list .extras .xhead { background: none; border: 0; text-align: left; padding: 12px 8px 12px 20px; cursor: pointer; }
 #list .extras .xhead:hover { background: rgba(242,234,219,.05); }
-#list .extras .xcheck { background: none; border: 0; padding: 12px 20px 12px 8px; cursor: pointer; }
+#list .extras .xcheck, #list .frow .xcheck { background: none; border: 0; padding: 12px 20px 12px 8px; cursor: pointer; align-self: stretch; }
 .xcheck .ck { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; }
 .xcheck.seen .ck { background: var(--red); border-color: var(--red); }
 .xcheck .ck svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
@@ -404,8 +405,8 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
 .xbody .xmeta { color: var(--muted); font-size: 12px; }
 .xbody .where { border-radius: 6px; padding: 8px 12px 12px; color: var(--ink); font-family: var(--font-shantell), sans-serif; }
 .xbody .where .grp > b { min-width: 0; margin-right: 4px; }
-#list .credit { margin: 20px 20px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
-#list ol[hidden] { display: none; }
+#list .credit { margin: 20px 20px 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+#list [hidden] { display: none; }
 #list .extras .xhead, #list .extras .xcheck { display: block; width: auto; border-top: 0; }
 #list .extras .xhead { text-align: left; }
 
@@ -451,3 +452,8 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
 .welcome .note { margin: 14px 0 0; font-size: 13px; }
 .friend-note { text-align: center; color: #fff; font-weight: 700; }
 .friend-note p { margin: 0; font-size: 18px; -webkit-text-stroke: 0; text-shadow: 2px 2px 0 var(--ink); }
+
+/* ---------- list: summary, phases and the next tag ---------- */
+.list-sum { margin: 0; padding: 0 20px 12px; color: var(--muted); font-size: 13px; }
+#list .phase-head { margin: 14px 0 6px; padding: 0 20px; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.next-tag { display: inline-block; margin-left: 8px; padding: 1px 6px; border-radius: 2px; background: var(--yellow); color: var(--wall); font-style: normal; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; vertical-align: 1px; }
