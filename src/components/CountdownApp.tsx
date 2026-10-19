@@ -96,8 +96,8 @@ const ORDER_KEY = 'ac-order';
 type Panel = 'order' | 'list' | 'account' | null;
 
 const ORDERS: { mode: SortMode; name: string; tagline: string; why: string }[] = [
-  { mode: 'story', name: 'Ordem da história', tagline: 'Do Nº 1 ao Nº 38, na ordem em que os eventos acontecem.', why: 'Por que ver assim: a história vira uma linha contínua, sem saltos no tempo, e é a ordem que o Countdown usa para contar os dias até o Doutor Destino. É o caminho recomendado para quem está começando.' },
-  { mode: 'release', name: 'Lançamento e fases', tagline: 'Na ordem em que os filmes chegaram aos cinemas, agrupados por fase.', why: 'Por que ver assim: você descobre o universo como o público descobriu, com as surpresas e as conexões aparecendo na ordem em que foram lançadas. Ótimo para rever com calma ou acompanhar a evolução do estilo.' },
+  { mode: 'story', name: 'Ordem da história', tagline: 'Do Nº 1 ao Nº 38, na ordem em que os eventos acontecem.', why: 'A história vira uma linha contínua, sem saltos no tempo, e é a ordem que o Countdown usa para contar os dias até o Doutor Destino. É o caminho recomendado para quem está começando.' },
+  { mode: 'release', name: 'Lançamento e fases', tagline: 'Na ordem em que os filmes chegaram aos cinemas, agrupados por fase.', why: 'Você descobre o universo como o público descobriu, com as surpresas e as conexões aparecendo na ordem em que foram lançadas. Ótimo para rever com calma ou acompanhar a evolução do estilo.' },
 ];
 
 export function CountdownApp({ catalog, initialN = null, initialExtra = null, sharedSeen }: { catalog: Catalog; initialN?: number | null; initialExtra?: number | null; sharedSeen?: number[] }) {
@@ -629,9 +629,10 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
             {ORDERS.map(o => (
               <button key={o.mode} role="radio" aria-checked={sortMode === o.mode} className={`order-card${sortMode === o.mode ? ' on' : ''}`}
                 onClick={() => { chooseOrder(o.mode); closePanel(); }}>
-                <span className="oc-top"><strong>{o.name}</strong>{o.mode === 'story' && <em className="next-tag">Recomendada</em>}{sortMode === o.mode && <span className="oc-now">Atual</span>}</span>
+                <span className="oc-radio" aria-hidden="true" />
+                <span className="oc-top"><strong>{o.name}</strong>{o.mode === 'story' && <em className="next-tag">Recomendada</em>}</span>
                 <span className="oc-line">{o.tagline}</span>
-                <span className="oc-why">{o.why}</span>
+                <span className="oc-why"><b>Por que ver assim</b>{o.why}</span>
               </button>
             ))}
           </div>
