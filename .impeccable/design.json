@@ -1,0 +1,505 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-19T02:31:22.822Z",
+  "title": "Design System: Avengers Countdown",
+  "extensions": {
+    "colorMeta": {
+      "wall": {
+        "role": "neutral",
+        "displayName": "Shelf Wall",
+        "canonical": "oklch(18.8% 0.010 276.4)",
+        "tonalRamp": [
+          "oklch(15% 0.010 276.4)",
+          "oklch(26% 0.010 276.4)",
+          "oklch(37% 0.010 276.4)",
+          "oklch(48% 0.010 276.4)",
+          "oklch(59% 0.010 276.4)",
+          "oklch(70% 0.010 276.4)",
+          "oklch(82% 0.010 276.4)",
+          "oklch(95% 0.010 276.4)"
+        ]
+      },
+      "wall-raised": {
+        "role": "neutral",
+        "displayName": "Raised Wall",
+        "canonical": "oklch(22.9% 0.014 278.9)",
+        "tonalRamp": [
+          "oklch(15% 0.014 278.9)",
+          "oklch(26% 0.014 278.9)",
+          "oklch(37% 0.014 278.9)",
+          "oklch(48% 0.014 278.9)",
+          "oklch(59% 0.014 278.9)",
+          "oklch(70% 0.014 278.9)",
+          "oklch(82% 0.014 278.9)",
+          "oklch(95% 0.014 278.9)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "oklch(93.9% 0.022 83.3)",
+        "tonalRamp": [
+          "oklch(15% 0.021 83.3)",
+          "oklch(26% 0.022 83.3)",
+          "oklch(37% 0.022 83.3)",
+          "oklch(48% 0.022 83.3)",
+          "oklch(59% 0.022 83.3)",
+          "oklch(70% 0.022 83.3)",
+          "oklch(82% 0.022 83.3)",
+          "oklch(95% 0.021 83.3)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Faded Paper",
+        "canonical": "oklch(74.4% 0.022 81.8)",
+        "tonalRamp": [
+          "oklch(15% 0.021 81.8)",
+          "oklch(26% 0.022 81.8)",
+          "oklch(37% 0.022 81.8)",
+          "oklch(48% 0.022 81.8)",
+          "oklch(59% 0.022 81.8)",
+          "oklch(70% 0.022 81.8)",
+          "oklch(82% 0.022 81.8)",
+          "oklch(95% 0.021 81.8)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(242, 234, 219, .16)",
+        "tonalRamp": [
+          "rgba(242,234,219,.04)",
+          "rgba(242,234,219,.08)",
+          "rgba(242,234,219,.1)",
+          "rgba(242,234,219,.16)",
+          "rgba(242,234,219,.18)",
+          "rgba(242,234,219,.28)",
+          "rgba(242,234,219,.3)",
+          "rgba(242,234,219,.5)"
+        ]
+      },
+      "red": {
+        "role": "primary",
+        "displayName": "Lacquer Red",
+        "canonical": "oklch(58.5% 0.223 29.1)",
+        "tonalRamp": [
+          "oklch(15% 0.122 29.1)",
+          "oklch(26% 0.152 29.1)",
+          "oklch(37% 0.183 29.1)",
+          "oklch(48% 0.214 29.1)",
+          "oklch(59% 0.222 29.1)",
+          "oklch(70% 0.191 29.1)",
+          "oklch(82% 0.158 29.1)",
+          "oklch(95% 0.122 29.1)"
+        ]
+      },
+      "red-deep": {
+        "role": "primary",
+        "displayName": "Deep Lacquer",
+        "canonical": "oklch(49.0% 0.189 26.4)",
+        "tonalRamp": [
+          "oklch(15% 0.105 26.4)",
+          "oklch(26% 0.131 26.4)",
+          "oklch(37% 0.157 26.4)",
+          "oklch(48% 0.183 26.4)",
+          "oklch(59% 0.189 26.4)",
+          "oklch(70% 0.164 26.4)",
+          "oklch(82% 0.135 26.4)",
+          "oklch(95% 0.105 26.4)"
+        ]
+      },
+      "yellow": {
+        "role": "secondary",
+        "displayName": "Next-Issue Yellow",
+        "canonical": "oklch(83.3% 0.170 90.6)",
+        "tonalRamp": [
+          "oklch(15% 0.095 90.6)",
+          "oklch(26% 0.118 90.6)",
+          "oklch(37% 0.142 90.6)",
+          "oklch(48% 0.165 90.6)",
+          "oklch(59% 0.170 90.6)",
+          "oklch(70% 0.148 90.6)",
+          "oklch(82% 0.123 90.6)",
+          "oklch(95% 0.095 90.6)"
+        ]
+      },
+      "newsprint": {
+        "role": "neutral",
+        "displayName": "Newsprint",
+        "canonical": "oklch(91.8% 0.038 86.9)",
+        "tonalRamp": [
+          "oklch(15% 0.029 86.9)",
+          "oklch(26% 0.034 86.9)",
+          "oklch(37% 0.038 86.9)",
+          "oklch(48% 0.038 86.9)",
+          "oklch(59% 0.038 86.9)",
+          "oklch(70% 0.038 86.9)",
+          "oklch(82% 0.035 86.9)",
+          "oklch(95% 0.029 86.9)"
+        ]
+      },
+      "panel-paper": {
+        "role": "neutral",
+        "displayName": "Panel Paper",
+        "canonical": "oklch(96.8% 0.022 87.2)",
+        "tonalRamp": [
+          "oklch(15% 0.021 87.2)",
+          "oklch(26% 0.022 87.2)",
+          "oklch(37% 0.022 87.2)",
+          "oklch(48% 0.022 87.2)",
+          "oklch(59% 0.022 87.2)",
+          "oklch(70% 0.022 87.2)",
+          "oklch(82% 0.022 87.2)",
+          "oklch(95% 0.021 87.2)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(17.8% 0.000 89.9)",
+        "tonalRamp": [
+          "oklch(15% 0.000 89.9)",
+          "oklch(26% 0.000 89.9)",
+          "oklch(37% 0.000 89.9)",
+          "oklch(48% 0.000 89.9)",
+          "oklch(59% 0.000 89.9)",
+          "oklch(70% 0.000 89.9)",
+          "oklch(82% 0.000 89.9)",
+          "oklch(95% 0.000 89.9)"
+        ]
+      },
+      "comic-yellow": {
+        "role": "tertiary",
+        "displayName": "Comic Yellow",
+        "canonical": "oklch(84.6% 0.173 90.6)",
+        "tonalRamp": [
+          "oklch(15% 0.096 90.6)",
+          "oklch(26% 0.120 90.6)",
+          "oklch(37% 0.144 90.6)",
+          "oklch(48% 0.168 90.6)",
+          "oklch(59% 0.173 90.6)",
+          "oklch(70% 0.150 90.6)",
+          "oklch(82% 0.124 90.6)",
+          "oklch(95% 0.096 90.6)"
+        ]
+      },
+      "comic-blue": {
+        "role": "tertiary",
+        "displayName": "Comic Blue",
+        "canonical": "oklch(49.3% 0.150 256.8)",
+        "tonalRamp": [
+          "oklch(15% 0.085 256.8)",
+          "oklch(26% 0.106 256.8)",
+          "oklch(37% 0.126 256.8)",
+          "oklch(48% 0.147 256.8)",
+          "oklch(59% 0.150 256.8)",
+          "oklch(70% 0.132 256.8)",
+          "oklch(82% 0.109 256.8)",
+          "oklch(95% 0.085 256.8)"
+        ]
+      },
+      "error": {
+        "role": "error",
+        "displayName": "Error Coral",
+        "canonical": "oklch(75.9% 0.144 26.1)",
+        "tonalRamp": [
+          "oklch(15% 0.082 26.1)",
+          "oklch(26% 0.101 26.1)",
+          "oklch(37% 0.121 26.1)",
+          "oklch(48% 0.141 26.1)",
+          "oklch(59% 0.144 26.1)",
+          "oklch(70% 0.127 26.1)",
+          "oklch(82% 0.105 26.1)",
+          "oklch(95% 0.082 26.1)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Countdown Numeral",
+        "purpose": "The days remaining; one per screen."
+      },
+      "headline": {
+        "displayName": "Big Number",
+        "purpose": "Bottom-HUD stats."
+      },
+      "clock": {
+        "displayName": "Clock",
+        "purpose": "hh:mm:ss beside the days, tabular figures."
+      },
+      "title": {
+        "displayName": "Card Title",
+        "purpose": "Next film title in the Próximo card."
+      },
+      "body": {
+        "displayName": "Wall Body",
+        "purpose": "Default running text on the wall."
+      },
+      "label": {
+        "displayName": "Tracked Label",
+        "purpose": "Wordmark, chips, tabs, card labels; uppercase."
+      },
+      "lettering": {
+        "displayName": "Comic Lettering",
+        "purpose": "Film titles, bursts, ficha values, issue nav; always ink-stroked."
+      },
+      "comic-body": {
+        "displayName": "Caption Hand",
+        "purpose": "Synopsis and labels on the comic page."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-lift",
+        "value": "0 10px 30px rgba(0,0,0,.35)",
+        "purpose": "Próximo card on the wall."
+      },
+      {
+        "name": "hover-tag",
+        "value": "0 6px 18px rgba(0,0,0,.4)",
+        "purpose": "Floating title tag over a hovered comic."
+      },
+      {
+        "name": "toast",
+        "value": "0 12px 34px rgba(0,0,0,.5)",
+        "purpose": "Undo toast."
+      },
+      {
+        "name": "sheet",
+        "value": "0 20px 50px rgba(0,0,0,.5)",
+        "purpose": "Account sheet."
+      },
+      {
+        "name": "drawer",
+        "value": "20px 0 60px rgba(0,0,0,.45)",
+        "purpose": "List drawer, cast toward the wall."
+      },
+      {
+        "name": "ink-offset-sm",
+        "value": "3px 3px 0 #111",
+        "purpose": "Streaming stickers on the comic page."
+      },
+      {
+        "name": "ink-offset-md",
+        "value": "4px 4px 0 #111",
+        "purpose": "Tickets button; title lettering as text-shadow."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "Default easing for every state change."
+      },
+      {
+        "name": "press",
+        "value": "transform .15s ease-out",
+        "purpose": "Buttons nudge 1px down on press."
+      },
+      {
+        "name": "progress-fill",
+        "value": "width .9s ease-out",
+        "purpose": "Progress bar growth after a check."
+      },
+      {
+        "name": "drawer-slide",
+        "value": "transform .5s ease-out",
+        "purpose": "List drawer sliding in from the left."
+      },
+      {
+        "name": "toast-in",
+        "value": ".35s ease-out, from opacity 0 / translateY(8px)",
+        "purpose": "Undo toast entrance."
+      },
+      {
+        "name": "page-reveal",
+        "value": "opacity .35s .12s",
+        "purpose": "Comic page panels fade in after the issue lands."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transition-duration: .01ms",
+        "purpose": "Applied globally under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "shelf-3-cols",
+        "value": "560px"
+      },
+      {
+        "name": "hud-collapse",
+        "value": "860px"
+      },
+      {
+        "name": "shelf-5-cols",
+        "value": "900px"
+      },
+      {
+        "name": "shelf-7-cols",
+        "value": "1300px"
+      },
+      {
+        "name": "lite-mode",
+        "value": "pointer: coarse or min(viewport) < 600px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Ink Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "Primary action on a yellow or paper surface (Marcar como visto, Undo).",
+      "html": "<div class=\"ds-on-yellow\"><button class=\"ds-btn-ink\">Marcar como visto</button></div>",
+      "css": ":host{--wall:#121318;--wall-2:#1b1c23;--paper:#f2eadb;--muted:#b3ab9d;--red:#e2231a;--yellow:#f2c200;--line:rgba(242,234,219,.16);--news:#efe3c8;--ink:#111;--c-yellow:#f7c600;--c-red:#e2231a;--c-blue:#1d5fb4;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-on-yellow{background:var(--yellow);padding:14px;border-radius:6px;display:inline-block} .ds-btn-ink{font-family:Archivo,system-ui,sans-serif;border:0;border-radius:4px;padding:8px 12px;cursor:pointer;font-weight:800;font-size:13px;transition:transform .15s var(--ease-out),background .2s;background:var(--wall);color:var(--paper)} .ds-btn-ink:hover{background:#000} .ds-btn-ink:active{transform:translateY(1px)} .ds-btn-ink:focus-visible{outline:3px solid var(--wall);outline-offset:3px}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action on yellow (Abrir o gibi).",
+      "html": "<div class=\"ds-on-yellow\"><button class=\"ds-btn-ghost\">Abrir o gibi</button></div>",
+      "css": ":host{--wall:#121318;--wall-2:#1b1c23;--paper:#f2eadb;--muted:#b3ab9d;--red:#e2231a;--yellow:#f2c200;--line:rgba(242,234,219,.16);--news:#efe3c8;--ink:#111;--c-yellow:#f7c600;--c-red:#e2231a;--c-blue:#1d5fb4;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-on-yellow{background:var(--yellow);padding:14px;border-radius:6px;display:inline-block} .ds-btn-ghost{font-family:Archivo,system-ui,sans-serif;border:0;border-radius:4px;padding:8px 12px;cursor:pointer;font-weight:800;font-size:13px;transition:transform .15s var(--ease-out),background .2s;background:transparent;color:var(--wall);box-shadow:inset 0 0 0 1.5px var(--wall)} .ds-btn-ghost:hover{background:rgba(18,19,24,.08)} .ds-btn-ghost:active{transform:translateY(1px)} .ds-btn-ghost:focus-visible{outline:3px solid var(--wall);outline-offset:3px}"
+    },
+    {
+      "name": "Yellow Button",
+      "kind": "button",
+      "refersTo": "button-yellow",
+      "description": "Full-width submit inside the dark account sheet.",
+      "html": "<div class=\"ds-sheet\"><button class=\"ds-btn-yellow\">Enviar link</button></div>",
+      "css": ":host{--wall:#121318;--wall-2:#1b1c23;--paper:#f2eadb;--muted:#b3ab9d;--red:#e2231a;--yellow:#f2c200;--line:rgba(242,234,219,.16);--news:#efe3c8;--ink:#111;--c-yellow:#f7c600;--c-red:#e2231a;--c-blue:#1d5fb4;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-sheet{background:var(--wall-2);padding:16px;border-radius:8px;width:300px} .ds-btn-yellow{font-family:Archivo,system-ui,sans-serif;width:100%;border:0;border-radius:4px;padding:11px 14px;cursor:pointer;font-weight:800;font-size:14px;background:var(--yellow);color:var(--wall);transition:background .2s} .ds-btn-yellow:hover{background:#ffd21a} .ds-btn-yellow:focus-visible{outline:3px solid var(--yellow);outline-offset:3px} .ds-btn-yellow:disabled{opacity:.6;cursor:progress}"
+    },
+    {
+      "name": "HUD Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Pill controls in the top HUD (LISTA, ENTRAR).",
+      "html": "<div class=\"ds-wall\"><button class=\"ds-chip\">Lista</button> <button class=\"ds-chip\">Entrar</button></div>",
+      "css": ":host{--wall:#121318;--wall-2:#1b1c23;--paper:#f2eadb;--muted:#b3ab9d;--red:#e2231a;--yellow:#f2c200;--line:rgba(242,234,219,.16);--news:#efe3c8;--ink:#111;--c-yellow:#f7c600;--c-red:#e2231a;--c-blue:#1d5fb4;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-wall{background:var(--wall);padding:16px;display:flex;gap:8px} .ds-chip{font-family:Archivo,system-ui,sans-serif;color:var(--paper);border:1px solid var(--line);background:rgba(242,234,219,.04);border-radius:999px;padding:6px 12px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;cursor:pointer;transition:background .2s,border-color .2s} .ds-chip:hover{background:rgba(242,234,219,.1);border-color:rgba(242,234,219,.3)} .ds-chip:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}"
+    },
+    {
+      "name": "Email Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Magic-link email field in the account sheet.",
+      "html": "<div class=\"ds-sheet\"><label class=\"ds-label\" for=\"ds-email\">E-mail</label><input id=\"ds-email\" class=\"ds-input\" type=\"email\" placeholder=\"voce@exemplo.com\"></div>",
+      "css": ":host{--wall:#121318;--wall-2:#1b1c23;--paper:#f2eadb;--muted:#b3ab9d;--red:#e2231a;--yellow:#f2c200;--line:rgba(242,234,219,.16);--news:#efe3c8;--ink:#111;--c-yellow:#f7c600;--c-red:#e2231a;--c-blue:#1d5fb4;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-sheet{background:var(--wall-2);padding:16px;border-radius:8px;width:300px} .ds-label{font-family:Archivo,system-ui,sans-serif;display:block;color:var(--paper);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px} .ds-input{font-family:Archivo,system-ui,sans-serif;width:100%;box-sizing:border-box;font-size:16px;color:var(--paper);background:var(--wall);caret-color:var(--yellow);border:1px solid rgba(242,234,219,.28);border-radius:4px;padding:10px 12px} .ds-input::placeholder{color:rgba(179,171,157,.7)} .ds-input:focus{outline:2px solid var(--yellow);outline-offset:1px;border-color:transparent}"
+    },
+    {
+      "name": "Próximo Card",
+      "kind": "card",
+      "refersTo": "next-card",
+      "description": "The single solid color block on the wall: the next film and its two actions.",
+      "html": "<div class=\"ds-wall\"><div class=\"ds-next\"><div class=\"ds-cover\"></div><div class=\"ds-lbl\">Próximo · Nº 10</div><div class=\"ds-t\">Capitão América 2: O Soldado Invernal</div><div class=\"ds-acts\"><button class=\"ds-b ds-ink\">Marcar como visto</button><button class=\"ds-b ds-ghost\">Abrir o gibi</button></div></div></div>",
+      "css": ":host{--wall:#121318;--wall-2:#1b1c23;--paper:#f2eadb;--muted:#b3ab9d;--red:#e2231a;--yellow:#f2c200;--line:rgba(242,234,219,.16);--news:#efe3c8;--ink:#111;--c-yellow:#f7c600;--c-red:#e2231a;--c-blue:#1d5fb4;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-wall{background:var(--wall);padding:20px} .ds-next{font-family:Archivo,system-ui,sans-serif;display:grid;grid-template-columns:auto 1fr;gap:2px 14px;align-items:center;max-width:440px;padding:12px 14px 12px 12px;border-radius:6px;background:var(--yellow);color:var(--wall);box-shadow:0 10px 30px rgba(0,0,0,.35)} .ds-cover{grid-row:1/span 3;width:46px;aspect-ratio:2/3;border-radius:2px;background:linear-gradient(160deg,#c0392b,#1d5fb4);box-shadow:0 2px 6px rgba(0,0,0,.35)} .ds-lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;font-variation-settings:\"wdth\" 110} .ds-t{font-weight:800;font-size:17px;line-height:1.15;font-variation-settings:\"wdth\" 80} .ds-acts{display:flex;gap:8px;margin-top:6px} .ds-b{font-family:Archivo,system-ui,sans-serif;border:0;border-radius:4px;padding:8px 12px;cursor:pointer;font-weight:800;font-size:13px;transition:transform .15s var(--ease-out),background .2s;} .ds-b:active{transform:translateY(1px)} .ds-ink{background:var(--wall);color:var(--paper)} .ds-ink:hover{background:#000} .ds-ghost{background:transparent;color:var(--wall);box-shadow:inset 0 0 0 1.5px var(--wall)} .ds-ghost:hover{background:rgba(18,19,24,.08)} .ds-b:focus-visible{outline:3px solid var(--wall);outline-offset:3px}"
+    },
+    {
+      "name": "Stat Row and Progress Bar",
+      "kind": "custom",
+      "refersTo": "headline",
+      "description": "Bottom HUD: four hairline-divided big numbers, pace in yellow, and the Ben-Day red progress bar.",
+      "html": "<div class=\"ds-wall\"><div class=\"ds-stats\"><div class=\"ds-stat\"><div class=\"ds-v\">18h35</div><div class=\"ds-k\">assistidas</div></div><div class=\"ds-stat\"><div class=\"ds-v\">64h39</div><div class=\"ds-k\">faltam</div></div><div class=\"ds-stat\"><div class=\"ds-v\">29</div><div class=\"ds-k\">filmes pela frente</div></div><div class=\"ds-stat ds-pace\"><div class=\"ds-v\">1 a cada 2</div><div class=\"ds-k\">dias · 1h04 por dia</div></div></div><div class=\"ds-bar\"><div class=\"ds-track\"><div class=\"ds-fill\"></div></div><div class=\"ds-pct\">9 de 38</div></div></div>",
+      "css": ":host{--wall:#121318;--wall-2:#1b1c23;--paper:#f2eadb;--muted:#b3ab9d;--red:#e2231a;--yellow:#f2c200;--line:rgba(242,234,219,.16);--news:#efe3c8;--ink:#111;--c-yellow:#f7c600;--c-red:#e2231a;--c-blue:#1d5fb4;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-wall{font-family:Archivo,system-ui,sans-serif;background:var(--wall);color:var(--paper);padding:20px} .ds-stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line)} .ds-stat{padding:12px 18px 4px 0} .ds-stat+.ds-stat{padding-left:18px;border-left:1px solid var(--line)} .ds-v{font-size:34px;font-weight:900;line-height:1;letter-spacing:-.02em;font-variation-settings:\"wdth\" 66;font-variant-numeric:tabular-nums} .ds-k{color:var(--muted);font-size:13px;margin-top:4px} .ds-pace .ds-v{color:var(--yellow)} .ds-bar{margin-top:12px;display:flex;align-items:center;gap:12px} .ds-track{flex:1;height:12px;border-radius:2px;background:rgba(242,234,219,.08);overflow:hidden;position:relative} .ds-fill{position:absolute;inset:0 auto 0 0;width:24%;background-color:var(--red);background-image:radial-gradient(circle at center,rgba(0,0,0,.28) 34%,transparent 36%);background-size:6px 6px;transition:width .9s var(--ease-out)} .ds-track:hover .ds-fill{width:30%} .ds-pct{font-weight:800;font-size:14px;font-variation-settings:\"wdth\" 80;min-width:9ch;text-align:right}"
+    },
+    {
+      "name": "Comic Panel Set",
+      "kind": "card",
+      "refersTo": "comic-panel",
+      "description": "Comic page panels: caption box with phase label, and the ficha técnica with blue Bangers values.",
+      "html": "<div class=\"ds-news\"><div class=\"ds-panel ds-caption\"><span class=\"ds-phase\">Fase 1</span><p>Nick Fury reúne Homem de Ferro, Capitão América, Thor e Hulk para deter Loki.</p></div><div class=\"ds-panel ds-ficha\"><dl><div><dt>Ano</dt><dd class=\"ds-red\">2012</dd></div><div><dt>Duração</dt><dd>2h23</dd></div><div><dt>Direção</dt><dd>Joss Whedon</dd></div></dl></div></div>",
+      "css": ":host{--wall:#121318;--wall-2:#1b1c23;--paper:#f2eadb;--muted:#b3ab9d;--red:#e2231a;--yellow:#f2c200;--line:rgba(242,234,219,.16);--news:#efe3c8;--ink:#111;--c-yellow:#f7c600;--c-red:#e2231a;--c-blue:#1d5fb4;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-news{font-family:'Shantell Sans',Archivo,sans-serif;color:var(--ink);background-color:var(--news);background-image:radial-gradient(circle at 1px 1px,rgba(120,84,30,.10) 1px,transparent 1.3px);background-size:5px 5px;padding:12px;display:grid;gap:12px;max-width:520px} .ds-panel{position:relative;border:4px solid var(--ink);background:#fbf4e4} .ds-caption{background:var(--c-yellow);padding:16px 20px} .ds-caption p{margin:0;font-size:18px;line-height:1.45;font-style:italic;font-weight:500} .ds-phase{position:absolute;top:-4px;right:-4px;background:var(--ink);color:var(--c-yellow);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:4px 10px} .ds-ficha dl{margin:0;padding:6px 16px;display:grid} .ds-ficha dl div{display:grid;grid-template-columns:max-content 1fr;gap:8px;align-items:baseline;padding:6px 0;border-bottom:2px solid rgba(17,17,17,.75)} .ds-ficha dl div:last-child{border-bottom:0} .ds-ficha dt{font-weight:800;font-size:15px} .ds-ficha dt::after{content:\":\"} .ds-ficha dd{margin:0;font-family:Bangers,Archivo,sans-serif;font-size:23px;letter-spacing:.03em;color:var(--c-blue);line-height:1.05} .ds-ficha dd.ds-red{color:var(--c-red)}"
+    },
+    {
+      "name": "POW Burst",
+      "kind": "button",
+      "refersTo": "lettering",
+      "description": "The comic page main action: a starburst you hit to mark the film as seen, on the halftone red panel.",
+      "html": "<div class=\"ds-action\"><button class=\"ds-pow\"><svg viewBox=\"0 0 100 100\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><polygon points=\"50,0 57,24 75,7 70,31 93,22 78,42 100,50 78,58 93,78 70,69 75,93 57,76 50,100 43,76 25,93 30,69 7,78 22,58 0,50 22,42 7,22 30,31 25,7 43,24\" fill=\"#f7c600\" stroke=\"#111\" stroke-width=\"2.4\" vector-effect=\"non-scaling-stroke\" stroke-linejoin=\"round\"/></svg><span>Marcar como visto!</span></button></div>",
+      "css": ":host{--wall:#121318;--wall-2:#1b1c23;--paper:#f2eadb;--muted:#b3ab9d;--red:#e2231a;--yellow:#f2c200;--line:rgba(242,234,219,.16);--news:#efe3c8;--ink:#111;--c-yellow:#f7c600;--c-red:#e2231a;--c-blue:#1d5fb4;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-action{border:4px solid var(--ink);padding:18px;display:grid;place-items:center;background-color:var(--c-red);background-image:radial-gradient(circle at center,rgba(0,0,0,.22) 30%,transparent 32%),radial-gradient(circle at center,rgba(255,210,0,.22) 30%,transparent 32%);background-size:8px 8px,8px 8px;background-position:0 0,4px 4px} .ds-pow{position:relative;border:0;background:none;padding:0;cursor:pointer;width:340px;height:180px;display:grid;place-items:center;font-family:Bangers,Archivo,sans-serif;font-size:44px;color:var(--c-red);letter-spacing:.02em;line-height:.95;transition:transform .2s var(--ease-out)} .ds-pow svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible} .ds-pow span{position:relative;transform:rotate(-6deg);text-align:center;-webkit-text-stroke:2.5px var(--ink);paint-order:stroke fill;padding:0 18%} .ds-pow:hover{transform:scale(1.04) rotate(-1deg)} .ds-pow:active{transform:scale(.97)} .ds-pow:focus-visible{outline:3px solid var(--c-blue);outline-offset:2px}"
+    },
+    {
+      "name": "Streaming Sticker",
+      "kind": "chip",
+      "refersTo": "sticker",
+      "description": "Provider stickers in the where-to-watch panel, each tilted from a fixed set of angles.",
+      "html": "<div class=\"ds-where\"><b class=\"ds-grp\">Assinatura</b><span class=\"ds-sticker\" style=\"--r:-2deg\"><span class=\"ds-logo\"></span>Disney Plus</span><span class=\"ds-sticker\" style=\"--r:1.5deg\"><span class=\"ds-logo ds-logo-2\"></span>Netflix</span></div>",
+      "css": ":host{--wall:#121318;--wall-2:#1b1c23;--paper:#f2eadb;--muted:#b3ab9d;--red:#e2231a;--yellow:#f2c200;--line:rgba(242,234,219,.16);--news:#efe3c8;--ink:#111;--c-yellow:#f7c600;--c-red:#e2231a;--c-blue:#1d5fb4;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-where{font-family:'Shantell Sans',Archivo,sans-serif;color:var(--ink);background:#fff;border:4px solid var(--ink);padding:12px 16px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px} .ds-grp{font-size:13px;text-transform:uppercase;letter-spacing:.08em;min-width:92px} .ds-sticker{display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:3px solid var(--ink);border-radius:10px;background:#fff;font-weight:800;font-size:14px;transform:rotate(var(--r,0deg));box-shadow:3px 3px 0 var(--ink)} .ds-logo{width:30px;height:30px;border-radius:6px;background:#0b2a4a} .ds-logo-2{background:#e50914}"
+    },
+    {
+      "name": "Undo Toast",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "Paper toast with an ink Undo button after marking from the HUD or resetting.",
+      "html": "<div class=\"ds-wall\"><div class=\"ds-toast\"><span>Capitão América 2 marcado como visto.</span><button>Desfazer</button></div></div>",
+      "css": ":host{--wall:#121318;--wall-2:#1b1c23;--paper:#f2eadb;--muted:#b3ab9d;--red:#e2231a;--yellow:#f2c200;--line:rgba(242,234,219,.16);--news:#efe3c8;--ink:#111;--c-yellow:#f7c600;--c-red:#e2231a;--c-blue:#1d5fb4;--ease-out:cubic-bezier(.16,1,.3,1)} .ds-wall{background:var(--wall);padding:24px} .ds-toast{font-family:Archivo,system-ui,sans-serif;display:inline-flex;align-items:center;gap:14px;padding:10px 12px 10px 16px;border-radius:6px;background:var(--paper);color:var(--wall);font-weight:700;font-size:14px;box-shadow:0 12px 34px rgba(0,0,0,.5);animation:ds-toast-in .35s var(--ease-out)} .ds-toast button{font-family:Archivo,system-ui,sans-serif;flex:none;border:0;border-radius:4px;background:var(--wall);color:var(--paper);font-weight:800;font-size:13px;padding:6px 10px;cursor:pointer} .ds-toast button:hover{background:#000} .ds-toast button:focus-visible{outline:3px solid var(--wall);outline-offset:3px} @keyframes ds-toast-in{from{opacity:0;transform:translateY(8px)}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Collector's Wall",
+    "overview": "The site is a dark room with a wall of red lacquered ledges, and every MCU film is an original comic standing on it. Issues you haven't watched yet wait in their clear plastic bags, drained to grey. Watching one takes it out of the bag, brings back its color and stamps it **VISTO!**. The next issue sits pulled forward with a yellow label, and the last spot on the wall holds the premiere edition in a graded slab. The wall is the frame for everything: the countdown, the numbers and the progress bar are printed over its top and bottom edges like gallery signage, and they never compete with the covers.\n\nPulling an issue off the wall opens it into a full comic-book page: newsprint, ink-outlined panels, Bangers lettering, starburst sound effects, and a halftone red action panel where you hit **MARCAR!**. The shelf is quiet and nocturnal; the page is loud and printed. The comic language may come out onto the wall for real moments (finishing the marathon, the premiere arriving), but the wall's everyday chrome stays restrained so the covers carry the color.\n\nReal covers are the imagery. Color on the wall is earned: a cover only gets its color back when the film is watched, and the brand red and yellow are kept for the deadline, the next film, and progress.",
+    "keyCharacteristics": [
+      "Dark, warm-black wall with off-white \"paper\" text; the comic covers are the only full-color element at rest.",
+      "One variable sans (Archivo) runs the wall, carrying hierarchy through scale and width axis alone; the countdown is a single monumental condensed numeral.",
+      "The comic page switches to a full print vocabulary: newsprint dots, 4px ink outlines, flat yellow/red/blue, hard offset shadows, rotated lettering.",
+      "Watched vs not watched is shown with material (bag, desaturation, stamp), not with badges or checkmarks.",
+      "On phones a lighter mode is required: fewer, smaller textures, and the same hierarchy at reduced sizes."
+    ],
+    "rules": [
+      {
+        "name": "The Earned Color Rule",
+        "body": "At rest the wall is greyscale plus paper; covers come back to color only when watched. Red and yellow on the wall's chrome are reserved for the deadline, the next film and progress. Never tint an unwatched cover or add decorative color to the HUD.",
+        "section": "colors"
+      },
+      {
+        "name": "The Yellow Means Next Rule",
+        "body": "On the wall, `yellow` marks the single next action (the Próximo card, the next ledge label, the pace that tells you whether you'll make it). If something is yellow and it isn't about what comes next, it's wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Yellows Rule",
+        "body": "`yellow` belongs to the wall, `comic-yellow` to the printed page. They are near-identical by design but don't swap them; the comic one is the warmer process yellow that sits on newsprint.",
+        "section": "colors"
+      },
+      {
+        "name": "The Width-Axis Rule",
+        "body": "On the wall, hierarchy comes from scale and the `wdth` axis, never from a second family. Numerals squeeze (62–70), labels stretch (110–112). All counting numbers use tabular figures.",
+        "section": "typography"
+      },
+      {
+        "name": "The Letterer's Rule",
+        "body": "Bangers is for what a comic would shout (titles, sound effects, data values) and always carries an ink stroke drawn under the fill (`paint-order: stroke fill`). Running text is never set in Bangers.",
+        "section": "typography"
+      },
+      {
+        "name": "The Material State Rule",
+        "body": "Watched vs not watched is shown with material and light: in the bag, desaturated (12% saturation) and dimmed (42% brightness) versus out of the bag, full color, stamped. Never reduce it to a badge or a checkmark on the wall itself; the text list is where checkmarks live.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Hard Shadow Rule",
+        "body": "On the comic page, shadows have zero blur and use ink. Soft shadows belong only to the wall.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** let the covers be the only full color on the wall at rest; HUD chrome stays wall, paper, `muted` and hairlines.",
+      "**Do** keep `yellow` on the wall for the single next action and pace, and `red` for the brand, progress and the VISTO! stamp.",
+      "**Do** set every counting number in Archivo with tabular figures, squeezed on the `wdth` axis (62–70).",
+      "**Do** use 4px ink outlines, square corners and zero-blur ink shadows on anything that lives on the comic page.",
+      "**Do** stroke Bangers lettering in ink under the fill (2–3px, `paint-order: stroke fill`).",
+      "**Do** bring comic lettering and bursts onto the wall for real milestones (marathon finished, premiere day), and only then.",
+      "**Do** keep the focus ring visible: 3px yellow on the wall, 3px comic blue on the page.",
+      "**Do** respect `prefers-reduced-motion` and the lightweight phone mode in every new 3D or animated piece."
+    ],
+    "donts": [
+      "**Don't** add decorative color, gradients or glows to the HUD; it fades into the wall with its own gradients only.",
+      "**Don't** show watched state on the wall with badges, ribbons or checkmarks; use the bag, the desaturation and the stamp.",
+      "**Don't** use soft blurred shadows or rounded panels on the comic page, or hard ink offsets on the wall.",
+      "**Don't** set running text in Bangers, or bring in a second sans for the wall.",
+      "**Don't** swap `yellow` and `comic-yellow` between the two surfaces.",
+      "**Don't** replace the real comic covers with illustrations, posters or generated art."
+    ]
+  }
+}
