@@ -23,7 +23,7 @@ async function find(slug: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hit = await find((await params).slug);
   if (!hit) return {};
-  const description = `${hit.text} Onde assistir no Brasil e a contagem para Vingadores: Doutor Destino.`;
+  const description = `${hit.text} Veja onde assistir no Brasil e acompanhe a contagem regressiva para Vingadores: Doutor Destino.`;
   return {
     title: hit.title,
     description,

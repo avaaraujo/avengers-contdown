@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Avengers Countdown',
     short_name: 'Countdown',
-    description: 'Maratone o MCU em ordem cronológica até a estreia de Vingadores: Doutor Destino.',
+    description: 'Maratone o Universo Cinematográfico Marvel em ordem cronológica até a estreia de Vingadores: Doutor Destino.',
     lang: 'pt-BR',
     start_url: '/',
     scope: '/',

@@ -5,7 +5,7 @@ import { getCatalog } from '@/lib/catalog';
 import { dotDate, hm, parseProgressCode } from '@/lib/format';
 import { siteUrl } from '@/lib/site';
 
-export const alt = 'A estante de gibis de quem compartilhou: os filmes vistos em cores, os que faltam em preto e branco';
+export const alt = 'A estante de quem compartilhou: filmes assistidos em cores e filmes que faltam em preto e branco';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

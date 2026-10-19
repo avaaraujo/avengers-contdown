@@ -159,7 +159,7 @@ export function useProgress(items: { id: number; n: number }[]) {
 
   const signIn = useCallback(async (email: string) => {
     const { error } = await supabaseBrowser().auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + '/' } });
-    return error ? (error.status === 429 ? 'Muitos pedidos seguidos. Espere alguns minutos e tente de novo.' : 'Não deu para enviar o link. Confira o e-mail e tente de novo.') : null;
+    return error ? (error.status === 429 ? 'Muitas tentativas seguidas. Espere alguns minutos e tente novamente.' : 'Não deu para enviar o link. Confira o e-mail e tente de novo.') : null;
   }, []);
   const signOut = useCallback(async () => { await supabaseBrowser().auth.signOut(); }, []);
 

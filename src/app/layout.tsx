@@ -7,7 +7,7 @@ const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-
 const bangers = Bangers({ subsets: ['latin'], weight: '400', variable: '--font-bangers', display: 'swap' });
 const shantell = Shantell_Sans({ subsets: ['latin'], style: ['normal', 'italic'], variable: '--font-shantell', display: 'swap' });
 
-const description = 'Maratone o MCU em ordem cronológica até a estreia de Vingadores: Doutor Destino. Projeto de fã, sem afiliação com Marvel ou Disney.';
+const description = 'Maratone o Universo Cinematográfico Marvel em ordem cronológica até a estreia de Vingadores: Doutor Destino. Projeto de fã, sem vínculo com a Marvel ou a Disney.';
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,

@@ -24,12 +24,12 @@ export function AuthPanel({ open, onClose, user, signIn, signOut }: Props) {
     <div id="auth" className="auth" data-ui>
       {user ? (
         <>
-          <p>Seu progresso está salvo em <strong>{user.email}</strong> e aparece em qualquer aparelho em que você entrar.</p>
+          <p>Seu progresso está salvo em <strong>{user.email}</strong> e fica disponível em qualquer aparelho em que você entrar.</p>
           <button className="btn btn-light" onClick={() => { void signOut(); onClose(); }}>Sair</button>
         </>
       ) : state === 'sent' ? (
         <>
-          <p>Enviamos um link para <strong>{email}</strong>. Abra o e-mail neste mesmo navegador para entrar.</p>
+          <p>Enviamos um link para <strong>{email}</strong>. Abra o e-mail neste navegador para acessar sua conta.</p>
           <button className="btn btn-light" onClick={() => setState('idle')}>Usar outro e-mail</button>
         </>
       ) : (
@@ -39,7 +39,7 @@ export function AuthPanel({ open, onClose, user, signIn, signOut }: Props) {
           const err = await signIn(email.trim());
           if (err) { setError(err); setState('idle'); } else setState('sent');
         }}>
-          <p>Receba um link por e-mail, sem senha. O que você já marcou neste navegador vai junto para a conta.</p>
+          <p>Entre sem senha: vamos enviar um link por e-mail. Os filmes que você já marcou neste navegador serão sincronizados com sua conta.</p>
           <label htmlFor="auth-email">E-mail</label>
           <input id="auth-email" ref={inputRef} type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="voce@exemplo.com" />
           {error && <p className="err" role="alert">{error}</p>}

@@ -22,8 +22,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hit = await find((await params).code);
   if (!hit) return {};
   const { films, finale } = hit.catalog;
-  const title = `Um amigo viu ${hit.seen.size} de ${films.length} filmes do MCU`;
-  const description = `A maratona do MCU em ordem cronológica até ${finale.title}. Comece a sua e veja quanto falta.`;
+  const title = `Um amigo assistiu a ${hit.seen.size} de ${films.length} filmes do MCU`;
+  const description = `Uma maratona do MCU em ordem cronológica até ${finale.title}. Comece a sua e acompanhe o que falta.`;
   return {
     title,
     description,

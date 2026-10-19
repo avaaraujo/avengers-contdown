@@ -16,7 +16,7 @@ function titleLines(title: string): [string, string] {
   return i > 0 ? [title.slice(0, i + 1), title.slice(i + 1).trim()] : [title, ''];
 }
 
-export function Offers({ offers, empty = 'Este filme não está em nenhum streaming no Brasil agora.' }: { offers: Offer[]; empty?: string }) {
+export function Offers({ offers, empty = 'Este filme não está disponível em nenhum streaming no Brasil no momento.' }: { offers: Offer[]; empty?: string }) {
   if (!offers.length) return <p className="none">{empty}</p>;
   let k = 0;
   return (
@@ -67,8 +67,8 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, pre
   const upNext = films.find(f => !watched.has(f.n)) ?? null;
   const top = (
     <div className="cp-top panel">
-      <button className="back" onClick={onClose} data-autofocus aria-label="Voltar para a estante">
-        <BackArrow /><span className="full" aria-hidden="true">Voltar para a estante</span><span className="short" aria-hidden="true">Voltar</span>
+      <button className="back" onClick={onClose} data-autofocus aria-label="Voltar à estante">
+        <BackArrow /><span className="full" aria-hidden="true">Voltar à estante</span><span className="short" aria-hidden="true">Voltar</span>
       </button>
       <div className="mast lettering" aria-hidden="true"><span className="a">Avengers</span><span className="b">Countdown</span></div>
       <div className="burst days-burst lettering"><Burst points={13} inner={0.62} seed={3} /><span>{n === finale.n ? dotDate(finale.premiereAt) : released ? (sinceDays === 0 ? 'Hoje!' : 'Estreou!') : c ? (c.d === 0 ? 'Hoje!' : `${c.d} ${c.d === 1 ? 'dia' : 'dias'}!`) : '…'}</span></div>
@@ -82,7 +82,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, pre
       <div className="cp">
         {top}
         <div className="cp-splash panel">
-          <img src={finale.cover} alt={`Capa de ${finale.comic}`} />
+          <img src={finale.cover} alt={`Capa da edição ${finale.comic}`} />
           <div className="issue-box">Nº {finale.n}</div>
           <div className="splash-text">
             <h2 id="cp-title" className="lettering" tabIndex={-1}><span className="l1">{l1}</span>{l2 && <span className="l2">{l2}</span>}</h2>
@@ -90,7 +90,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, pre
           </div>
         </div>
         <div className="cp-col">
-          <div className="caption panel"><span className="phase">A estreia</span><p>{finale.synopsis} {released ? 'Já está em cartaz nos cinemas.' : 'Até lá, termine a maratona.'}</p></div>
+          <div className="caption panel"><span className="phase">A estreia</span><p>{finale.synopsis} {released ? 'Já está em cartaz nos cinemas.' : 'Até lá, termine sua maratona.'}</p></div>
           <div className="ficha panel">
             <div className="tag"><div className="burst lettering"><Burst seed={7} /><span>Ficha<br />técnica</span></div></div>
             <dl>
@@ -102,19 +102,19 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, pre
           <div className="action panel halftone-red" style={{ gridTemplateColumns: '1fr' }}>
             <div className="finale-count">
               {released ? (sinceDays === 0 ? 'Hoje' : 'Em cartaz') : c ? (c.d === 0 ? 'Hoje' : `${c.d} ${c.d === 1 ? 'dia' : 'dias'}`) : '…'}
-              <small>{released ? (sinceDays === 0 ? 'estreia nos cinemas' : `estreou há ${sinceDays} ${sinceDays === 1 ? 'dia' : 'dias'}`) : c ? `${pad(c.h)}h ${pad(c.m)}min até a estreia` : ''}</small>
+              <small>{released ? (sinceDays === 0 ? 'estreia nos cinemas' : `estreou há ${sinceDays} ${sinceDays === 1 ? 'dia' : 'dias'}`) : c ? `Faltam ${pad(c.h)}h ${pad(c.m)}min para a estreia` : ''}</small>
             </div>
             {finale.ticketsUrl && <a className="cp-tickets" href={finale.ticketsUrl} target="_blank" rel="noopener">Comprar ingresso</a>}
           </div>
           <div className="marathon panel">
             <h3 className="lettering">Sua maratona</h3>
-            <p>{seenCount === films.length ? `Maratona completa: ${seenCount} de ${films.length}. ${released ? 'Hora de ver no cinema.' : 'Você está pronto para a estreia.'}` : `Você viu ${seenCount} de ${films.length} filmes antes da estreia.`}</p>
+            <p>{seenCount === films.length ? `Maratona completa: ${seenCount} de ${films.length}. ${released ? 'Agora é hora de ir ao cinema!' : 'Você está pronto para a estreia!'}` : `Você assistiu a ${seenCount} de ${films.length} filmes antes da estreia.`}</p>
             <div className="mbar" role="progressbar" aria-label="Progresso da maratona" aria-valuemin={0} aria-valuemax={films.length} aria-valuenow={seenCount}><div style={{ width: `${(seenCount / films.length) * 100}%` }} /></div>
             {upNext && <button className="cp-cta" onClick={() => onGo(upNext.n)}>Ir para o Nº {upNext.n}: {upNext.title}</button>}
           </div>
         </div>
         <nav className="cp-nav" aria-label="Edições">
-          <button onClick={() => onGo(last.n)}><ArrowLeft /><span><small>Edição anterior:</small><strong>{last.title}</strong></span></button>
+          <button onClick={() => onGo(last.n)}><ArrowLeft /><span><small>Edição anterior</small><strong>{last.title}</strong></span></button>
           <button disabled aria-hidden="true" />
         </nav>
       </div>
@@ -128,7 +128,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, pre
     <div className="cp">
       {top}
       <div className="cp-splash panel">
-        <img src={f.cover} alt={`Capa de ${f.comic}`} />
+        <img src={f.cover} alt={`Capa da edição ${f.comic}`} />
         <div className="issue-box">Nº {n}</div>
         <div className="splash-text">
           <h2 id="cp-title" className="lettering" tabIndex={-1}><span className="l1">{l1}</span>{l2 && <span className="l2">{l2}</span>}</h2>
@@ -155,15 +155,15 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, pre
         <div className="action panel halftone-red">
           {friend ? (
             <div className="friend-note">
-              <p>Você está vendo a estante do seu amigo. {seen ? 'Ele já viu este filme.' : 'Ele ainda não viu este filme.'}</p>
-              <button className="undo" onClick={onLeaveFriend}>Voltar para a minha</button>
+              <p>Você está vendo a estante do seu amigo. {seen ? 'Ele já assistiu a este filme.' : 'Ele ainda não assistiu a este filme.'}</p>
+              <button className="undo" onClick={onLeaveFriend}>Voltar para a minha estante</button>
             </div>
           ) : (
           <div>
             <button ref={powRef} className={`pow burst lettering${seen ? ' seen' : ''}`} aria-pressed={seen}
               onClick={() => { const on = !seen; onToggle(n); setMarkedHere(on ? n : null); }}>
               <Burst points={18} inner={0.66} seed={n + 2} fill={seen ? '#ffffff' : '#f7c600'} />
-              <span>{seen ? 'Visto!' : 'Marcar como visto!'}</span>
+              <span>{seen ? 'Visto!' : 'Marcar como visto'}</span>
             </button>
             {seen && <button className="undo" onClick={() => { onToggle(n); setMarkedHere(null); powRef.current?.focus({ preventScroll: true }); }}>{markedHere === n ? 'Desfazer' : 'Desmarcar'}</button>}
           </div>
@@ -173,12 +173,12 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, pre
       </div>
       <nav className="cp-nav" aria-label="Edições">
         <button onClick={() => prev && onGo(prev.n)} disabled={!prev}>
-          <ArrowLeft /><span><small>Edição anterior:</small><strong>{prev?.title ?? ''}</strong></span>
+          <ArrowLeft /><span><small>Edição anterior</small><strong>{prev?.title ?? ''}</strong></span>
         </button>
         <button onClick={() => onGo(next ? next.n : finale.n)}>
           {next
-            ? <span><small>Próxima edição:</small><strong>{next.title}</strong></span>
-            : <span><small>Última edição:</small><strong>{finale.title}</strong></span>}
+            ? <span><small>Próxima edição</small><strong>{next.title}</strong></span>
+            : <span><small>Última edição</small><strong>{finale.title}</strong></span>}
           <ArrowRight />
         </button>
       </nav>

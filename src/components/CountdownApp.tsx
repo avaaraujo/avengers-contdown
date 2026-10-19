@@ -59,7 +59,7 @@ function NextCard({ slot, film, held, firstVisit, finale, released, filmCount, f
         <img src={thumb(finale.cover)} alt="" />
         <div className="label">Estante do seu amigo</div>
         <div className="t">{friendSeen} de {filmCount} filmes vistos</div>
-        <div className="actions"><button className="btn btn-ink" ref={ref} onClick={onLeaveFriend}>Voltar para a minha</button></div>
+        <div className="actions"><button className="btn btn-ink" ref={ref} onClick={onLeaveFriend}>Voltar para a minha estante</button></div>
       </div>
     );
   }
@@ -68,21 +68,21 @@ function NextCard({ slot, film, held, firstVisit, finale, released, filmCount, f
       {film ? (
         <>
           <img src={thumb(film.cover)} alt="" />
-          <div className="label">{firstVisit ? 'Comece por aqui' : 'Próximo'} · Nº {film.n}</div>
+          <div className="label">{firstVisit ? 'Comece por aqui' : 'Próximo'} · nº {film.n}</div>
           <div className="t">{film.title}</div>
-          {firstVisit && <div className="hint">A ordem é a da história, não a de lançamento.</div>}
+          {firstVisit && <div className="hint">A ordem segue a história, não a data de lançamento.</div>}
           <div className="actions">
             <button className={`btn btn-ink${held ? ' held' : ''}`} ref={ref} aria-disabled={held ? true : undefined}
               aria-label={`${held ? 'Visto' : 'Marcar como visto'}: ${film.title}`}
               onClick={() => { if (!held) onMark(film); }}>{held ? 'Visto!' : 'Marcar como visto'}</button>
-            <button className="btn btn-ghost" onClick={() => onOpen(film.n)}>Abrir o gibi</button>
+            <button className="btn btn-ghost" onClick={() => onOpen(film.n)}>Ver o gibi</button>
           </div>
         </>
       ) : (
         <>
           <img src={thumb(finale.cover)} alt="" />
-          <div className="label">Maratona completa: {filmCount} de {filmCount}</div>
-          <div className="t">{released ? 'Hora de ver no cinema.' : 'Você está pronto para o Doutor Destino.'}</div>
+          <div className="label">Maratona completa: {filmCount} de {filmCount} filmes</div>
+          <div className="t">{released ? 'Hora de ver no cinema.' : 'Você está pronto para Vingadores: Doutor Destino.'}</div>
           <div className="actions"><button className="btn btn-ink" ref={ref} onClick={() => onOpen(finale.n)}>Ver a última edição</button></div>
         </>
       )}
@@ -96,8 +96,8 @@ const ORDER_KEY = 'ac-order';
 type Panel = 'order' | 'list' | 'account' | null;
 
 const ORDERS: { mode: SortMode; name: string; tagline: string; why: string }[] = [
-  { mode: 'story', name: 'Ordem da história', tagline: 'Do Nº 1 ao Nº 38, na ordem em que os eventos acontecem.', why: 'A história vira uma linha contínua, sem saltos no tempo, e é a ordem que o Countdown usa para contar os dias até o Doutor Destino. É o caminho recomendado para quem está começando.' },
-  { mode: 'release', name: 'Lançamento e fases', tagline: 'Na ordem em que os filmes chegaram aos cinemas, agrupados por fase.', why: 'Você descobre o universo como o público descobriu, com as surpresas e as conexões aparecendo na ordem em que foram lançadas. Ótimo para rever com calma ou acompanhar a evolução do estilo.' },
+  { mode: 'story', name: 'Ordem da história', tagline: 'Do Nº 1 ao Nº 38, na ordem em que os eventos acontecem.', why: 'A história segue em uma linha contínua, sem saltos no tempo. É também a ordem usada pelo Countdown para contar os dias até Vingadores: Doutor Destino — e a recomendada para quem está começando.' },
+  { mode: 'release', name: 'Lançamento e fases', tagline: 'Na ordem em que os filmes chegaram aos cinemas, separados por fase.', why: 'Você descobre o universo como o público descobriu: com surpresas e conexões na ordem em que apareceram. É uma boa opção para rever os filmes ou acompanhar a evolução do estilo.' },
 ];
 
 export function CountdownApp({ catalog, initialN = null, initialExtra = null, sharedSeen }: { catalog: Catalog; initialN?: number | null; initialExtra?: number | null; sharedSeen?: number[] }) {
@@ -437,7 +437,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
   }, [mainAction]);
   /** marking from the HUD or the list is one tap, so it gets an undo */
   const toggleWithUndo = useCallback((t: Film | Extra, n: number, onUndo?: () => void) => {
-    if (friendRef.current) { showToast('Esta é a estante do seu amigo. Volte para a sua para marcar filmes.'); return; }
+    if (friendRef.current) { showToast('Esta é a estante do seu amigo. Volte para a sua para marcar os filmes que assistiu.'); return; }
     const origin = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
     const on = toggle(n);
     showToast(on ? `${t.title}: visto.` : `${t.title}: desmarcado.`, () => { toggle(n); onUndo?.(); refocus(origin); });
@@ -468,7 +468,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
   const share = useCallback(async () => {
     const seen = films.filter(f => watched.has(f.n)).length;
     const url = `${location.origin}/progresso/${progressCode(watched, films.length)}`;
-    const text = `Já vi ${seen} de ${films.length} filmes da maratona do MCU antes de ${finale.title}.`;
+    const text = `Já assisti a ${seen} de ${films.length} filmes do MCU antes de ${finale.title}.`;
     if (navigator.share) {
       try { await navigator.share({ title: 'Avengers Countdown', text, url }); } catch { /* the share sheet was dismissed */ }
       return;
@@ -496,15 +496,15 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
   const cdMin = minuteNow === null ? null : countdownParts(finale.premiereAt, minuteNow);
   const plural = (v: number, one: string, many: string) => `${v} ${v === 1 ? one : many}`;
   const countdownSentence = cdMin === null ? '' : premiereDay ? `${finale.title} estreia hoje nos cinemas do Brasil.`
-    : released ? `${finale.title} está nos cinemas do Brasil há ${plural(sinceDays, 'dia', 'dias')}.`
-    : `Faltam ${plural(cdMin.d, 'dia', 'dias')}, ${plural(cdMin.h, 'hora', 'horas')} e ${plural(cdMin.m, 'minuto', 'minutos')} para a estreia de ${finale.title}, em ${dotDate(finale.premiereAt)}.`;
+    : released ? `${finale.title} está em cartaz nos cinemas do Brasil há ${plural(sinceDays, 'dia', 'dias')}.`
+    : `Faltam ${plural(cdMin.d, 'dia', 'dias')}, ${plural(cdMin.h, 'hora', 'horas')} e ${plural(cdMin.m, 'minuto', 'minutos')} para ${finale.title} estrear, em ${dotDate(finale.premiereAt)}.`;
   const days = now === null ? null : Math.max((finale.premiereAt - now) / 864e5, 0.01);
   // the legend has a short form for phones, where four stats share one row
   let pace = '—', paceK = 'filmes por dia', paceShort = 'filmes por dia';
   if (days !== null) {
     const perDay = leftFilms / days;
-    if (released) { pace = 'Em cartaz'; paceK = leftFilms === 0 ? 'e você estava pronto' : 'a maratona segue, sem pressa'; paceShort = leftFilms === 0 ? 'e você estava pronto' : 'sem pressa'; }
-    else if (leftFilms === 0) { pace = 'Pronto'; paceK = paceShort = 'para a estreia'; }
+    if (released) { pace = 'Em cartaz'; paceK = leftFilms === 0 ? 'e você já estava pronto' : 'a maratona segue, sem pressa'; paceShort = leftFilms === 0 ? 'e você já estava pronto' : 'sem pressa'; }
+    else if (leftFilms === 0) { pace = 'Tudo pronto'; paceK = paceShort = 'para a estreia'; }
     else if (perDay < 1) { pace = `1 a cada ${dec(1 / perDay, 0)}`; paceK = `dias · ${hm(leftMin / days)} por dia`; paceShort = 'dias, por filme'; }
     else { pace = dec(perDay); paceK = `filmes por dia · ${hm(leftMin / days)}`; paceShort = 'filmes por dia'; }
   }
@@ -548,7 +548,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
       <canvas id="scene" ref={canvasRef} aria-hidden="true" />
       <div id="track" style={{ height: trackH || undefined }} />
 
-      <h1 className="sr-only">Avengers Countdown: maratona até {finale.title}</h1>
+      <h1 className="sr-only">Avengers Countdown: sua maratona até {finale.title}</h1>
       <header className="hud-top" ref={topRef} inert={behind || (narrow && listOpen)}>
         <div className="brand" data-ui>
           <span className="logo">Avengers <b>Countdown</b></span>
@@ -556,8 +556,8 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
             <button className="chip" ref={orderBtnRef} onClick={() => togglePanel('order')} aria-controls="list" aria-expanded={panel === 'order'}>Ordenar</button>
             <button className="chip" ref={listBtnRef} onClick={() => togglePanel('list')} aria-controls="list" aria-expanded={panel === 'list'}>Lista</button>
             <button className="chip" ref={authBtnRef} onClick={() => togglePanel('account')} aria-expanded={authOpen} aria-controls="list"
-              title={progress.user ? undefined : 'Opcional: entre para levar seu progresso a qualquer aparelho'}
-              aria-label={progress.user ? undefined : 'Entrar (opcional) para sincronizar o progresso'}>
+              title={progress.user ? undefined : 'Entre para levar seu progresso para qualquer aparelho (opcional)'}
+              aria-label={progress.user ? undefined : 'Entre para sincronizar seu progresso (opcional)'}>
               {progress.user ? 'Conta' : 'Entrar'}
             </button>
           </nav>
@@ -569,8 +569,8 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
             <div className="unit" aria-hidden="true">{countUnit}</div>
             <div className="clock num" aria-hidden="true">{released ? (premiereDay ? dotDate(finale.premiereAt) : `desde ${dotDate(finale.premiereAt)}`) : cd ? `${pad(cd.h)}:${pad(cd.m)}:${pad(cd.s)}` : '--:--:--'}</div>
             {released
-              ? <div className="to" aria-hidden="true">{premiereDay ? <><strong>{finale.title}</strong><br />estreou hoje no Brasil</> : <><strong>{finale.title}</strong><br />nos cinemas do Brasil</>}</div>
-              : <div className="to" aria-hidden="true">até <strong>{finale.title}</strong><br />estreia no Brasil · {dotDate(finale.premiereAt)}</div>}
+              ? <div className="to" aria-hidden="true">{premiereDay ? <><strong>{finale.title}</strong><br />estreia hoje no Brasil</> : <><strong>{finale.title}</strong><br />em cartaz nos cinemas do Brasil</>}</div>
+              : <div className="to" aria-hidden="true">até <strong>{finale.title}</strong><br />estreia no Brasil em {dotDate(finale.premiereAt)}</div>}
             {finale.ticketsUrl && <a className="tickets" href={finale.ticketsUrl} target="_blank" rel="noopener">Comprar ingresso</a>}
           </div>
         </div>
@@ -597,7 +597,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
             ? <span className="err">{progress.error}</span>
             : progress.user
               ? <span>Progresso salvo na sua conta.</span>
-              : <span>Seu progresso fica salvo neste navegador. <button onClick={() => togglePanel('account')}>Entre</button> para levar para qualquer aparelho.</span>}
+              : <span>Seu progresso fica salvo neste navegador. <button onClick={() => togglePanel('account')}>Entre</button> para acessar de qualquer aparelho.</span>}
         </div>
       </footer>
 
@@ -641,7 +641,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
           <AuthPanel open={view === 'account'} onClose={closePanel} user={progress.user} signIn={progress.signIn} signOut={progress.signOut} />
         </div>
         <div hidden={view !== 'list'}>
-        <p className="list-sum num">{seenFilms.length} de {films.length} · {hm(seenMin)} vistas</p>
+        <p className="list-sum num">{seenFilms.length} de {films.length} · {hm(seenMin)} assistidas</p>
         <div className="tabs" role="tablist" aria-label="Seções da lista" onKeyDown={onTabKeys}>
           {tabs.map(([k, label, c]) => (
             <button key={k} role="tab" id={`tab-${k}`} aria-selected={tab === k} aria-controls={k === 'films' ? 'panel-films' : 'panel-extras'}
@@ -651,7 +651,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
         <div id="panel-extras" role="tabpanel" aria-labelledby={`tab-${tab}`} hidden={tab === 'films'}>
           {tab !== 'films' && (
             <ul className="extras">
-              <li className="extras-note">Extras ficam fora da conta do countdown: são para quem quer ir além da fila principal.</li>
+              <li className="extras-note">Os extras não entram na contagem regressiva. São para quem quer explorar além da maratona principal.</li>
               {extras.filter(x => x.kind === tab).map(x => {
                 const seen = watched.has(x.key), isOpen = openExtra === x.id;
                 return (
@@ -669,7 +669,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
                         <p>{x.synopsis}</p>
                         <p className="xmeta">{x.kind === 'series' ? 'Criação' : 'Direção'}: {x.director ?? '—'}{x.runtime && x.note ? ` · ${x.note}` : ''}{x.runtime ? '' : x.note ? ` · ${x.note}` : ''}</p>
                         <div className="where">
-                          <Offers offers={x.offers} empty={catalog.tmdb ? 'Não está em nenhum streaming no Brasil agora.' : 'Streaming ainda sem dados para este título.'} />
+                          <Offers offers={x.offers} empty={catalog.tmdb ? 'Não disponível em nenhum streaming no Brasil no momento.' : 'Ainda não há dados de streaming para este título.'} />
                         </div>
                       </div>
                     )}
@@ -725,7 +725,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
           </div>
         )}
         <p className="credit">
-          Capas: Marvel Database. Streaming: JustWatch{catalog.tmdb ? ' via TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado por ele' : ''}.
+          Capas: Marvel Database. Disponibilidade em streaming: JustWatch{catalog.tmdb ? ' via TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado por ele' : ''}.
         </p>
         </div>
       </nav>
@@ -744,14 +744,14 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
       {welcome && (
         <div className="welcome-scrim" data-ui>
           <section className="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
-            <p className="eyebrow">Um amigo te mandou a estante dele</p>
-            <h2 id="welcome-title">Um amigo já viu {sharedSeen!.length} de {films.length} filmes antes de {finale.title}.</h2>
-            <p>A fila segue a ordem cronológica da história, não a de lançamento. Por isso o Nº 1 é {films[0].title}.</p>
+            <p className="eyebrow">Um amigo compartilhou a estante com você</p>
+            <h2 id="welcome-title">Um amigo já assistiu a {sharedSeen!.length} de {films.length} filmes antes de {finale.title}.</h2>
+            <p>A maratona segue a ordem cronológica da história, não a de lançamento. Por isso, o nº 1 é {films[0].title}.</p>
             <div className="welcome-actions">
               <button className="btn btn-yellow" autoFocus onClick={() => closeWelcome(false)}>Começar a minha maratona</button>
               <button className="btn btn-light" onClick={() => closeWelcome(true)}>Ver a estante do meu amigo</button>
             </div>
-            <p className="note">Sem conta: seu progresso fica salvo neste navegador.</p>
+            <p className="note">Você não precisa de uma conta: seu progresso fica salvo neste navegador.</p>
           </section>
         </div>
       )}
