@@ -1,12 +1,15 @@
 /* eslint-disable @next/next/no-img-element -- comic covers and provider logos are small fixed assets */
 import { useRef, useState } from 'react';
 import type { Film, Finale, Offer, OfferKind } from '@/lib/types';
-import { countdownParts, hm, longDate, pad, saga } from '@/lib/format';
+import { countdownParts, dotDate, hm, longDate, pad, saga } from '@/lib/format';
 import { ArrowLeft, ArrowRight, BackArrow, Burst } from './Burst';
 
 const OFFER_LABEL: Record<OfferKind, string> = { flatrate: 'Assinatura', free: 'Grátis', ads: 'Com anúncios', rent: 'Aluguel', buy: 'Compra' };
 const ORDER: OfferKind[] = ['flatrate', 'free', 'ads', 'rent', 'buy'];
 const TILT = [-2, 1.5, -1, 2];
+
+/** "Thor" and "THOR" are the same title: the English line is only worth showing when it adds something */
+const plain = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
 
 function titleLines(title: string): [string, string] {
   const i = title.indexOf(':');
@@ -58,13 +61,14 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, fri
   const released = now !== null && now >= finale.premiereAt;
   const sinceDays = released ? Math.floor((now - finale.premiereAt) / 864e5) : 0;
   const seenCount = films.filter(f => watched.has(f.n)).length;
+  const upNext = films.find(f => !watched.has(f.n)) ?? null;
   const top = (
     <div className="cp-top panel">
       <button className="back" onClick={onClose} data-autofocus aria-label="Voltar para a estante">
         <BackArrow /><span className="full" aria-hidden="true">Voltar para a estante</span><span className="short" aria-hidden="true">Voltar</span>
       </button>
       <div className="mast lettering" aria-hidden="true"><span className="a">Avengers</span><span className="b">Countdown</span></div>
-      <div className="burst days-burst lettering"><Burst points={13} inner={0.62} seed={3} /><span>{released ? (sinceDays === 0 ? 'Hoje!' : 'Estreou!') : c ? (c.d === 0 ? 'Hoje!' : `${c.d} ${c.d === 1 ? 'dia' : 'dias'}!`) : '…'}</span></div>
+      <div className="burst days-burst lettering"><Burst points={13} inner={0.62} seed={3} /><span>{n === finale.n ? dotDate(finale.premiereAt) : released ? (sinceDays === 0 ? 'Hoje!' : 'Estreou!') : c ? (c.d === 0 ? 'Hoje!' : `${c.d} ${c.d === 1 ? 'dia' : 'dias'}!`) : '…'}</span></div>
     </div>
   );
 
@@ -79,7 +83,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, fri
           <div className="issue-box">Nº {finale.n}</div>
           <div className="splash-text">
             <h2 id="cp-title" className="lettering" tabIndex={-1}><span className="l1">{l1}</span>{l2 && <span className="l2">{l2}</span>}</h2>
-            <p className="en">{finale.en}</p>
+            {plain(finale.en) !== plain(finale.title) && <p className="en" aria-hidden="true">{finale.en}</p>}
           </div>
         </div>
         <div className="cp-col">
@@ -98,6 +102,12 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, fri
               <small>{released ? (sinceDays === 0 ? 'estreia nos cinemas' : `estreou há ${sinceDays} ${sinceDays === 1 ? 'dia' : 'dias'}`) : c ? `${pad(c.h)}h ${pad(c.m)}min até a estreia` : ''}</small>
             </div>
             {finale.ticketsUrl && <a className="cp-tickets" href={finale.ticketsUrl} target="_blank" rel="noopener">Comprar ingresso</a>}
+          </div>
+          <div className="marathon panel">
+            <h3 className="lettering">Sua maratona</h3>
+            <p>{seenCount === films.length ? `Maratona completa: ${seenCount} de ${films.length}. ${released ? 'Hora de ver no cinema.' : 'Você está pronto para a estreia.'}` : `Você viu ${seenCount} de ${films.length} filmes antes da estreia.`}</p>
+            <div className="mbar" role="progressbar" aria-label="Progresso da maratona" aria-valuemin={0} aria-valuemax={films.length} aria-valuenow={seenCount}><div style={{ width: `${(seenCount / films.length) * 100}%` }} /></div>
+            {upNext && <button className="cp-cta" onClick={() => onGo(upNext.n)}>Ir para o Nº {upNext.n}: {upNext.title}</button>}
           </div>
         </div>
         <nav className="cp-nav" aria-label="Edições">
@@ -119,7 +129,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, fri
         <div className="issue-box">Nº {n}</div>
         <div className="splash-text">
           <h2 id="cp-title" className="lettering" tabIndex={-1}><span className="l1">{l1}</span>{l2 && <span className="l2">{l2}</span>}</h2>
-          <p className="en">{f.en}</p>
+          {plain(f.en) !== plain(f.title) && <p className="en" aria-hidden="true">{f.en}</p>}
         </div>
       </div>
       <div className="cp-col">

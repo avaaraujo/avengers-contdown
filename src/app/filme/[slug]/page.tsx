@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getCatalog } from '@/lib/catalog';
@@ -32,7 +33,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function FilmPage({ params }: Props) {
+/** the URL's own data (params) is read inside Suspense, so the shared shell never depends on one film */
+async function FilmContent({ params }: Props) {
   const hit = await find((await params).slug);
   if (!hit) notFound();
   return (
@@ -40,5 +42,13 @@ export default async function FilmPage({ params }: Props) {
       <JsonLd data={hit.ld} />
       <CountdownApp catalog={hit.catalog} initialN={hit.n} />
     </>
+  );
+}
+
+export default function FilmPage({ params }: Props) {
+  return (
+    <Suspense fallback={<div id="loading">Arrumando a estante…</div>}>
+      <FilmContent params={params} />
+    </Suspense>
   );
 }

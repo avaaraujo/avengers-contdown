@@ -134,6 +134,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
   const go = useCallback((p: Phase) => { phaseRef.current = p; setPhase(p); }, []);
   const openDetailRef = useRef<(n: number) => void>(() => {});
   const initialDone = useRef(false);
+  const instantOpen = useRef(false);
   // focus goes back where it came from when a panel closes
   const returnFocus = useRef<HTMLElement | null>(null);
   const listBtnRef = useRef<HTMLButtonElement>(null);
@@ -263,7 +264,17 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
 
   useLayoutEffect(() => {
     const el = pageRef.current;
-    if (phase !== 'open' || !el || !handoffRect.current) return;
+    if (phase !== 'open' || !el) return;
+    if (instantOpen.current) {
+      // a direct link: the page is simply there, the shelf loads behind it
+      instantOpen.current = false;
+      el.style.transition = 'none';
+      el.style.clipPath = 'inset(0px 0px 0px 0px round 0px)';
+      el.scrollTop = 0;
+      (el.querySelector('[data-autofocus]') as HTMLElement | null)?.focus({ preventScroll: true });
+      return;
+    }
+    if (!handoffRect.current) return;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     el.style.transition = 'none';
     el.style.clipPath = insetFor(handoffRect.current);
@@ -334,10 +345,21 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
     return m[1] === finale.slug ? finale.n : films.find(f => f.slug === m[1])?.n ?? null;
   }, [films, finale]);
   useEffect(() => {
-    if (!ready || initialDone.current) return;
+    if (initialDone.current) return;
     initialDone.current = true;
-    if (initialN !== null) queueMicrotask(() => openDetail(initialN, true));
-  }, [ready, initialN, openDetail]);
+    if (initialN === null) return;
+    queueMicrotask(() => {
+      if (phaseRef.current !== 'closed') return;
+      instantOpen.current = true;
+      focusFallback.current = true;
+      setPageN(initialN);
+      go('open');
+    });
+  }, [initialN, go]);
+  // once the shelf exists, it takes down the comic the page is showing
+  useEffect(() => {
+    if (ready && phase === 'open' && pageN !== null && sceneRef.current && sceneRef.current.current !== pageN) sceneRef.current.openInstant(pageN);
+  }, [ready, phase, pageN]);
   useEffect(() => {
     const onPop = () => {
       const n = nFromPath(location.pathname);
@@ -677,7 +699,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
         </div>
       )}
 
-      <div id="loading" className={ready ? 'gone' : undefined}>Arrumando a estante…</div>
+      <div id="loading" className={ready ? 'gone' : undefined} aria-hidden="true">Arrumando a estante…</div>
     </div>
   );
 }

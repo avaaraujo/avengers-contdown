@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getCatalog } from '@/lib/catalog';
@@ -34,8 +35,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 /** A shared progress link: the card shows the sender's shelf; the page is the visitor's own marathon. */
-export default async function ProgressPage({ params }: Props) {
+async function ProgressContent({ params }: Props) {
   const hit = await find((await params).code);
   if (!hit) notFound();
   return <CountdownApp catalog={hit.catalog} sharedSeen={[...hit.seen]} />;
+}
+
+export default function ProgressPage({ params }: Props) {
+  return (
+    <Suspense fallback={<div id="loading">Arrumando a estante…</div>}>
+      <ProgressContent params={params} />
+    </Suspense>
+  );
 }

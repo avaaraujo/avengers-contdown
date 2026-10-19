@@ -78,7 +78,7 @@ export class ShelfScene {
     this.renderer.toneMappingExposure = 1.2;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.needsUpdate = true;
-    this.renderer.shadowMap.type = lite ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap; // PCFSoftShadowMap was removed from three.js
     if (lite) this.renderer.shadowMap.autoUpdate = false; // re-rendered every other frame, see update()
 
     const s = this.scene;
@@ -118,6 +118,14 @@ export class ShelfScene {
     this.selected = n;
     this.cb.onHover(null, 0, 0);
     if (!this.items[n - 1]) { this.pageShown = true; this.cb.onHandoff(n, this.centerRect()); }
+  }
+  /** the issue the shelf has taken down, if any */
+  get current() { return this.selected; }
+  /** a direct link: the page already covers the canvas, so the comic is simply taken off the shelf behind it */
+  openInstant(n: number) {
+    this.goTo(n);
+    this.pageShown = true;
+    this.cb.onHover(null, 0, 0);
   }
   /** swap the issue while the page covers the canvas */
   goTo(n: number) {

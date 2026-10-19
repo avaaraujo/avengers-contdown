@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-19T02:31:22.822Z",
+  "generatedAt": "2026-10-19T03:15:01.000Z",
   "title": "Design System: Avengers Countdown",
   "extensions": {
     "colorMeta": {
@@ -213,6 +213,81 @@
           "oklch(82% 0.105 26.1)",
           "oklch(95% 0.082 26.1)"
         ]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "White",
+        "canonical": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "oklch(15% 0.000 89.9)",
+          "oklch(26% 0.000 89.9)",
+          "oklch(37% 0.000 89.9)",
+          "oklch(48% 0.000 89.9)",
+          "oklch(59% 0.000 89.9)",
+          "oklch(70% 0.000 89.9)",
+          "oklch(82% 0.000 89.9)",
+          "oklch(95% 0.000 89.9)"
+        ]
+      },
+      "black": {
+        "role": "neutral",
+        "displayName": "Pressed Black",
+        "canonical": "oklch(0.0% 0.000 0.0)",
+        "tonalRamp": [
+          "oklch(15% 0.000 0.0)",
+          "oklch(26% 0.000 0.0)",
+          "oklch(37% 0.000 0.0)",
+          "oklch(48% 0.000 0.0)",
+          "oklch(59% 0.000 0.0)",
+          "oklch(70% 0.000 0.0)",
+          "oklch(82% 0.000 0.0)",
+          "oklch(95% 0.000 0.0)"
+        ]
+      },
+      "yellow-hover": {
+        "role": "secondary",
+        "displayName": "Yellow Hover",
+        "canonical": "oklch(89.0% 0.168 94.2)",
+        "tonalRamp": [
+          "oklch(15% 0.064 94.2)",
+          "oklch(26% 0.080 94.2)",
+          "oklch(37% 0.095 94.2)",
+          "oklch(48% 0.110 94.2)",
+          "oklch(59% 0.126 94.2)",
+          "oklch(70% 0.141 94.2)",
+          "oklch(82% 0.158 94.2)",
+          "oklch(95% 0.159 94.2)"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Ink Soft",
+        "canonical": "oklch(38.7% 0.000 89.9)",
+        "tonalRamp": [
+          "oklch(15% 0.000 89.9)",
+          "oklch(26% 0.000 89.9)",
+          "oklch(37% 0.000 89.9)",
+          "oklch(48% 0.000 89.9)",
+          "oklch(59% 0.000 89.9)",
+          "oklch(70% 0.000 89.9)",
+          "oklch(82% 0.000 89.9)",
+          "oklch(95% 0.000 89.9)"
+        ]
+      },
+      "muted-paper": {
+        "role": "neutral",
+        "displayName": "Muted Paper",
+        "canonical": "oklch(46.0% 0.015 75.2)",
+        "tonalRamp": [
+          "oklch(15% 0.015 75.2)",
+          "oklch(26% 0.015 75.2)",
+          "oklch(37% 0.015 75.2)",
+          "oklch(48% 0.015 75.2)",
+          "oklch(59% 0.015 75.2)",
+          "oklch(70% 0.015 75.2)",
+          "oklch(82% 0.015 75.2)",
+          "oklch(95% 0.015 75.2)"
+        ]
       }
     },
     "typographyMeta": {
@@ -247,6 +322,18 @@
       "comic-body": {
         "displayName": "Caption Hand",
         "purpose": "Synopsis and labels on the comic page."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Button text on the wall, toast message, list titles (14px)."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Secondary lines in muted: stat captions, list years, notes (13px)."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "Phone stat captions only (11px)."
       }
     },
     "shadows": [
@@ -438,13 +525,14 @@
   ],
   "narrative": {
     "northStar": "The Collector's Wall",
-    "overview": "The site is a dark room with a wall of red lacquered ledges, and every MCU film is an original comic standing on it. Issues you haven't watched yet wait in their clear plastic bags, drained to grey. Watching one takes it out of the bag, brings back its color and stamps it **VISTO!**. The next issue sits pulled forward with a yellow label, and the last spot on the wall holds the premiere edition in a graded slab. The wall is the frame for everything: the countdown, the numbers and the progress bar are printed over its top and bottom edges like gallery signage, and they never compete with the covers.\n\nPulling an issue off the wall opens it into a full comic-book page: newsprint, ink-outlined panels, Bangers lettering, starburst sound effects, and a halftone red action panel where you hit **MARCAR!**. The shelf is quiet and nocturnal; the page is loud and printed. The comic language may come out onto the wall for real moments (finishing the marathon, the premiere arriving), but the wall's everyday chrome stays restrained so the covers carry the color.\n\nReal covers are the imagery. Color on the wall is earned: a cover only gets its color back when the film is watched, and the brand red and yellow are kept for the deadline, the next film, and progress.",
+    "overview": "The site is a dark room with a wall of red lacquered ledges, and every MCU film is an original comic standing on it. Issues you haven't watched yet wait in their clear plastic bags, drained to grey. Watching one takes it out of the bag, brings back its color and stamps it **VISTO!**. The next issue sits pulled forward with a yellow label, and the last spot on the wall holds the premiere edition in a graded slab. The wall is the frame for everything: the countdown, the numbers and the progress bar are printed over its top and bottom edges like gallery signage, and they never compete with the covers.\n\nPulling an issue off the wall opens it into a full comic-book page: newsprint, ink-outlined panels, Bangers lettering, starburst sound effects, and a halftone red action panel where you hit **MARCAR!**. The shelf is quiet and nocturnal; the page is loud and printed. The comic language stays on the page: milestones on the wall (finishing the marathon, premiere day, the weeks in theaters) are handled with plain, correctly worded text and hierarchy, never lettering or bursts, so the wall's chrome stays restrained and the covers carry the color.\n\nReal covers are the imagery. Color on the wall is earned: a cover only gets its color back when the film is watched, and the brand red and yellow are kept for the deadline, the next film, and progress.",
     "keyCharacteristics": [
       "Dark, warm-black wall with off-white \"paper\" text; the comic covers are the only full-color element at rest.",
       "One variable sans (Archivo) runs the wall, carrying hierarchy through scale and width axis alone; the countdown is a single monumental condensed numeral.",
       "The comic page switches to a full print vocabulary: newsprint dots, 4px ink outlines, flat yellow/red/blue, hard offset shadows, rotated lettering.",
       "Watched vs not watched is shown with material (bag, desaturation, stamp), not with badges or checkmarks.",
-      "On phones a lighter mode is required: fewer, smaller textures, and the same hierarchy at reduced sizes."
+      "On phones a lighter mode is required: fewer, smaller textures, and the same hierarchy at reduced sizes.",
+      "On phones the Próximo card moves into the bottom HUD as a compact bar with 48px buttons, in thumb reach; on the comic page the mark button follows the cover directly."
     ],
     "rules": [
       {
@@ -489,7 +577,7 @@
       "**Do** set every counting number in Archivo with tabular figures, squeezed on the `wdth` axis (62–70).",
       "**Do** use 4px ink outlines, square corners and zero-blur ink shadows on anything that lives on the comic page.",
       "**Do** stroke Bangers lettering in ink under the fill (2–3px, `paint-order: stroke fill`).",
-      "**Do** bring comic lettering and bursts onto the wall for real milestones (marathon finished, premiere day), and only then.",
+      "**Do** mark milestones on the wall (marathon finished, premiere day, in theaters) with correct, well-ranked text only: \"Hoje\", \"dias em cartaz\", \"Maratona completa: 38 de 38\". No lettering or bursts on the wall.",
       "**Do** keep the focus ring visible: 3px yellow on the wall, 3px comic blue on the page.",
       "**Do** respect `prefers-reduced-motion` and the lightweight phone mode in every new 3D or animated piece."
     ],

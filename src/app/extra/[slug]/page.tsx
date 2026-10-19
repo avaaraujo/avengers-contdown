@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getCatalog } from '@/lib/catalog';
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 /** An extra (Disney+ series or X-Men film): the shelf with the list open on it. */
-export default async function ExtraPage({ params }: Props) {
+async function ExtraContent({ params }: Props) {
   const hit = await find((await params).slug);
   if (!hit) notFound();
   return (
@@ -42,5 +43,13 @@ export default async function ExtraPage({ params }: Props) {
       <JsonLd data={extraLd(hit.extra)} />
       <CountdownApp catalog={hit.catalog} initialExtra={hit.extra.id} />
     </>
+  );
+}
+
+export default function ExtraPage({ params }: Props) {
+  return (
+    <Suspense fallback={<div id="loading">Arrumando a estante…</div>}>
+      <ExtraContent params={params} />
+    </Suspense>
   );
 }
