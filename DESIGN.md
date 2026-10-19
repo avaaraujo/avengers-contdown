@@ -204,6 +204,7 @@ Two palettes share one red: a nocturnal shelf palette (wall, paper, red, yellow)
 
 ### Primary
 - **Lacquer Red** (`red`): The brand mark ("COUNTDOWN" in the wordmark), the progress-bar fill, the checked state in the list, the VISTO! stamp, and the comic page's red lettering and halftone action panel. The one color both worlds share.
+- **Phase lacquers:** each ledge segment under a comic takes its film's MCU phase color (Fase 1 red `#b3141c`, 2 blue `#1f5fae`, 3 purple `#6a2fa0`, 4 teal `#0d7c78`, 5 orange `#c25a10`, 6 magenta `#b0246b`) and the ledge label names the phase ("FASE 3"). The premiere takes Fase 6. Yellow stays reserved for the next film.
 - **Deep Lacquer** (`red-deep`): The shelf ledges themselves (as a clearcoated 3D material) and the page scrollbar. A surface red, never used for text.
 
 ### Secondary

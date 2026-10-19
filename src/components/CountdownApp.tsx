@@ -206,7 +206,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
       const probe = document.createElement('canvas');
       if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) { setNoWebgl(true); setReady(true); return; }
       const scene = new ShelfScene(canvas,
-        films.map(f => ({ n: f.n, title: f.title, year: f.year, runtime: f.runtime, cover: f.cover })),
+        films.map(f => ({ n: f.n, title: f.title, year: f.year, runtime: f.runtime, cover: f.cover, phase: f.phase })),
         { n: finale.n, title: finale.title, cover: finale.cover, premiereAt: finale.premiereAt },
         {
           onReady: () => setReady(true),

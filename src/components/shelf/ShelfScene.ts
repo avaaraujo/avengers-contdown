@@ -3,7 +3,11 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { dotDate, hm, thumb } from '@/lib/format';
 
 export type Rect = { l: number; t: number; r: number; b: number };
-export type ShelfFilm = { n: number; title: string; year: number; runtime: number; cover: string };
+export type ShelfFilm = { n: number; title: string; year: number; runtime: number; cover: string; phase: number };
+
+/** one lacquer per MCU phase; the premiere belongs to the last one */
+export const PHASE_COLORS: Record<number, number> = { 1: 0xb3141c, 2: 0x1f5fae, 3: 0x6a2fa0, 4: 0x0d7c78, 5: 0xc25a10, 6: 0xb0246b };
+const LAST_PHASE = 6;
 export type ShelfFinale = { n: number; title: string; cover: string; premiereAt: number };
 export type ShelfCallbacks = {
   onReady(): void;
@@ -218,12 +222,14 @@ export class ShelfScene {
     });
   }
   /** Nº on the left; the runtime (or, for the premiere, its date) on the right */
+  private phaseOf(n: number) { return n === this.finaleData.n ? LAST_PHASE : this.films[n - 1]?.phase || LAST_PHASE; }
   private ledgeLabelDraw(n: number, tag: string, isNext: boolean) {
     return (g: CanvasRenderingContext2D, w: number, h: number) => {
       if (isNext) { g.fillStyle = '#f2c200'; g.fillRect(0, 0, w, h); }
       g.fillStyle = isNext ? '#121318' : '#f6ece0'; g.textBaseline = 'middle';
       g.font = `900 52px ${this.font}`; g.textAlign = 'left'; g.fillText('Nº ' + n, 18, h / 2 + 2);
       g.font = `700 44px ${this.font}`; g.textAlign = 'right'; g.fillText(tag, w - 18, h / 2 + 2);
+      g.font = `800 34px ${this.font}`; g.textAlign = 'center'; g.fillText('FASE ' + this.phaseOf(n), w / 2 + 6, h / 2 + 2);
     };
   }
 
@@ -300,16 +306,29 @@ export class ShelfScene {
     const shelfW = (this.shelfW = cols * W + (cols - 1) * GX);
     this.ledges.forEach(l => this.shelf.remove(l)); this.ledges = [];
     if (this.wall) this.shelf.remove(this.wall);
-    const ledgeMat = new THREE.MeshPhysicalMaterial({ color: 0xb3141c, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.18 });
+    const mats = new Map<number, THREE.MeshPhysicalMaterial>();
+    const matFor = (phase: number) => {
+      let m = mats.get(phase);
+      if (!m) { m = new THREE.MeshPhysicalMaterial({ color: PHASE_COLORS[phase] ?? PHASE_COLORS[LAST_PHASE], roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.18 }); mats.set(phase, m); }
+      return m;
+    };
     this.wall = new THREE.Mesh(new THREE.PlaneGeometry(shelfW + 30, rows * RH + 30), new THREE.MeshStandardMaterial({ color: 0x17181f, roughness: 0.92 }));
     this.wall.position.set(0, (-(rows - 1) * RH) / 2, -0.32); this.wall.receiveShadow = true; this.shelf.add(this.wall);
     for (let r = 0; r < rows; r++) {
       const y = -r * RH - H / 2 - 0.05;
-      const ledge = new THREE.Mesh(new THREE.BoxGeometry(shelfW + 0.7, 0.07, 0.62), ledgeMat);
-      ledge.position.set(0, y, -0.02); ledge.castShadow = true; ledge.receiveShadow = true;
-      const lip = new THREE.Mesh(new THREE.BoxGeometry(shelfW + 0.7, 0.2, 0.05), ledgeMat);
-      lip.position.set(0, y + 0.065, 0.3); lip.castShadow = true;
-      this.shelf.add(ledge, lip); this.ledges.push(ledge, lip);
+      // the ledge is cut into one segment under each comic, lacquered in that film's phase color
+      for (let c = 0; c < cols; c++) {
+        const it = this.items[r * cols + c] ?? this.items[this.items.length - 1];
+        const mat = matFor(this.phaseOf(it.n));
+        const edge = c === 0 || c === cols - 1 ? 0.35 - GX / 2 : 0;
+        const segW = W + GX + edge;
+        const x = -shelfW / 2 + W / 2 + c * (W + GX) + (c === 0 ? -edge / 2 : c === cols - 1 ? edge / 2 : 0);
+        const ledge = new THREE.Mesh(new THREE.BoxGeometry(segW, 0.07, 0.62), mat);
+        ledge.position.set(x, y, -0.02); ledge.castShadow = true; ledge.receiveShadow = true;
+        const lip = new THREE.Mesh(new THREE.BoxGeometry(segW, 0.2, 0.05), mat);
+        lip.position.set(x, y + 0.065, 0.3); lip.castShadow = true;
+        this.shelf.add(ledge, lip); this.ledges.push(ledge, lip);
+      }
     }
     const x0 = -shelfW / 2 + W / 2;
     this.items.forEach((it, i) => {
