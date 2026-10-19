@@ -239,8 +239,6 @@ export class ShelfScene {
       g.fillStyle = isNext ? '#121318' : '#f6ece0'; g.textBaseline = 'middle';
       g.font = `900 52px ${this.font}`; g.textAlign = 'left'; g.fillText('Nº ' + n, 18, h / 2 + 2);
       g.font = `700 44px ${this.font}`; g.textAlign = 'right'; g.fillText(tag, w - 18, h / 2 + 2);
-      // the premiere's long date needs the room; its color already says Fase 6
-      if (n !== this.finaleData.n) { g.font = `800 34px ${this.font}`; g.textAlign = 'center'; g.fillText('FASE ' + this.phaseOf(n), w / 2 + 6, h / 2 + 2); }
     };
   }
 
