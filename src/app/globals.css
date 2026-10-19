@@ -240,9 +240,9 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
   content: ""; position: absolute; left: 10px; bottom: -14px; width: 26px; height: 22px; background: #fff;
   border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink); transform: skewX(-35deg) rotate(10deg); border-radius: 0 0 6px 0;
 }
-.balloon b { font-family: var(--font-bangers), sans-serif; font-weight: 400; font-size: 44px; line-height: 1; color: var(--c-blue); display: block; }
+.balloon b { font-family: var(--font-bangers), sans-serif; font-weight: 400; font-size: 36px; line-height: 1; color: var(--c-blue); display: block; }
 .balloon b em { font-style: normal; color: var(--c-red); }
-.balloon small { font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.balloon small { font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; display: block; max-width: 11ch; margin: 2px auto 0; line-height: 1.2; }
 .finale-count { font-family: var(--font-bangers), sans-serif; font-size: 88px; line-height: .9; color: #fff; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 5px 5px 0 var(--ink); }
 .finale-count small { display: block; font-size: 32px; color: var(--c-yellow); }
 
@@ -298,6 +298,7 @@ html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.pa
     max-width: none; padding: 8px 10px; margin-bottom: 8px; pointer-events: auto;
   }
   .next.bottom img { grid-row: 1 / span 2; width: 30px; }
+  .next.bottom.done .t { white-space: normal; }
   .next.bottom .t { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .next.bottom .actions { grid-column: 1 / -1; margin-top: 8px; gap: 8px; }
   .next.bottom .btn { flex: 1 1 0; min-height: 48px; padding: 0 10px; font-size: 14px; }

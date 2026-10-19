@@ -61,7 +61,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
         <BackArrow /><span className="full" aria-hidden="true">Voltar para a estante</span><span className="short" aria-hidden="true">Voltar</span>
       </button>
       <div className="mast lettering" aria-hidden="true"><span className="a">Avengers</span><span className="b">Countdown</span></div>
-      <div className="burst days-burst lettering"><Burst points={13} inner={0.62} seed={3} /><span>{released ? 'Estreou!' : c ? `${c.d} dias!` : '…'}</span></div>
+      <div className="burst days-burst lettering"><Burst points={13} inner={0.62} seed={3} /><span>{released ? (sinceDays === 0 ? 'Hoje!' : 'Estreou!') : c ? (c.d === 0 ? 'Hoje!' : `${c.d} ${c.d === 1 ? 'dia' : 'dias'}!`) : '…'}</span></div>
     </div>
   );
 
@@ -91,8 +91,8 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
           </div>
           <div className="action panel halftone-red" style={{ gridTemplateColumns: '1fr' }}>
             <div className="finale-count">
-              {released ? 'Em cartaz' : c ? `${c.d} dias` : '…'}
-              <small>{released ? (sinceDays ? `estreou há ${sinceDays} ${sinceDays === 1 ? 'dia' : 'dias'}` : 'estreou hoje') : c ? `${pad(c.h)}h ${pad(c.m)}min até a estreia` : ''}</small>
+              {released ? (sinceDays === 0 ? 'Hoje' : 'Em cartaz') : c ? (c.d === 0 ? 'Hoje' : `${c.d} ${c.d === 1 ? 'dia' : 'dias'}`) : '…'}
+              <small>{released ? (sinceDays === 0 ? 'estreia nos cinemas' : `estreou há ${sinceDays} ${sinceDays === 1 ? 'dia' : 'dias'}`) : c ? `${pad(c.h)}h ${pad(c.m)}min até a estreia` : ''}</small>
             </div>
             {finale.ticketsUrl && <a className="cp-tickets" href={finale.ticketsUrl} target="_blank" rel="noopener">Comprar ingresso</a>}
           </div>
@@ -145,7 +145,7 @@ export function ComicPage({ n, films, finale, watched, now, offersCheckedAt, onT
             </button>
             {seen && <button className="undo" onClick={() => { onToggle(n); setMarkedHere(null); powRef.current?.focus({ preventScroll: true }); }}>{markedHere === n ? 'Desfazer' : 'Desmarcar'}</button>}
           </div>
-          <div className="balloon"><b><em>{n}</em> de {films.length}</b><small>na ordem</small></div>
+          <div className="balloon"><b>Nº <em>{n}</em> de {films.length}</b><small>na ordem cronológica</small></div>
         </div>
       </div>
       <nav className="cp-nav" aria-label="Edições">

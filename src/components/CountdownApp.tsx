@@ -327,6 +327,13 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
   const released = now !== null && now >= finale.premiereAt;
   const sinceDays = released ? Math.floor((now - finale.premiereAt) / 864e5) : 0;
   const cd = now === null ? null : countdownParts(finale.premiereAt, now);
+  // milestones are words, not decoration: "Hoje" on premiere day, "dias em cartaz" after, never "0 dias"
+  const premiereDay = released && sinceDays === 0;
+  const todayWord = premiereDay || (!released && cd !== null && cd.d === 0);
+  const countUnit = premiereDay ? 'estreia nos cinemas'
+    : released ? `${sinceDays === 1 ? 'dia' : 'dias'} em cartaz`
+    : cd && cd.d === 0 ? 'estreia em'
+    : cd && cd.d === 1 ? 'dia' : 'dias';
   const days = now === null ? null : Math.max((finale.premiereAt - now) / 864e5, 0.01);
   // the legend has a short form for phones, where four stats share one row
   let pace = '—', paceK = 'filmes por dia', paceShort = 'filmes por dia';
@@ -356,8 +363,8 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
       ) : (
         <>
           <img src={thumb(finale.cover)} alt="" />
-          <div className="label">Maratona completa</div>
-          <div className="t">{released ? 'Hora de ver o Doutor Destino no cinema.' : 'Você está pronto para o Doutor Destino.'}</div>
+          <div className="label">Maratona completa: {films.length} de {films.length}</div>
+          <div className="t">{released ? 'Hora de ver no cinema.' : 'Você está pronto para o Doutor Destino.'}</div>
           <div className="actions"><button className="btn btn-ink" ref={el => { nextBtnRefs.current[slot] = el; }} onClick={() => openDetail(finale.n)}>Ver a última edição</button></div>
         </>
       )}
@@ -383,12 +390,12 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null }: 
           </nav>
         </div>
         <div className="count" data-ui>
-          <div className="days num">{released ? sinceDays : cd ? cd.d : '--'}</div>
+          <div className="days num">{todayWord ? 'Hoje' : released ? sinceDays : cd ? cd.d : '--'}</div>
           <div className="rest">
-            <div className="unit">{released && sinceDays === 1 ? 'dia' : 'dias'}</div>
-            <div className="clock num">{released ? 'Nos cinemas' : cd ? `${pad(cd.h)}:${pad(cd.m)}:${pad(cd.s)}` : '--:--:--'}</div>
+            <div className="unit">{countUnit}</div>
+            <div className="clock num">{released ? (premiereDay ? dotDate(finale.premiereAt) : `desde ${dotDate(finale.premiereAt)}`) : cd ? `${pad(cd.h)}:${pad(cd.m)}:${pad(cd.s)}` : '--:--:--'}</div>
             {released
-              ? <div className="to"><strong>{finale.title}</strong> estreou<br />no Brasil · {dotDate(finale.premiereAt)}</div>
+              ? <div className="to">{premiereDay ? <><strong>{finale.title}</strong><br />estreou hoje no Brasil</> : <><strong>{finale.title}</strong><br />nos cinemas do Brasil</>}</div>
               : <div className="to">até <strong>{finale.title}</strong><br />estreia no Brasil · {dotDate(finale.premiereAt)}</div>}
             {finale.ticketsUrl && <a className="tickets" href={finale.ticketsUrl} target="_blank" rel="noopener">Comprar ingresso</a>}
           </div>

@@ -167,7 +167,7 @@ components:
 
 The site is a dark room with a wall of red lacquered ledges, and every MCU film is an original comic standing on it. Issues you haven't watched yet wait in their clear plastic bags, drained to grey. Watching one takes it out of the bag, brings back its color and stamps it **VISTO!**. The next issue sits pulled forward with a yellow label, and the last spot on the wall holds the premiere edition in a graded slab. The wall is the frame for everything: the countdown, the numbers and the progress bar are printed over its top and bottom edges like gallery signage, and they never compete with the covers.
 
-Pulling an issue off the wall opens it into a full comic-book page: newsprint, ink-outlined panels, Bangers lettering, starburst sound effects, and a halftone red action panel where you hit **MARCAR!**. The shelf is quiet and nocturnal; the page is loud and printed. The comic language may come out onto the wall for real moments (finishing the marathon, the premiere arriving), but the wall's everyday chrome stays restrained so the covers carry the color.
+Pulling an issue off the wall opens it into a full comic-book page: newsprint, ink-outlined panels, Bangers lettering, starburst sound effects, and a halftone red action panel where you hit **MARCAR!**. The shelf is quiet and nocturnal; the page is loud and printed. The comic language stays on the page: milestones on the wall (finishing the marathon, premiere day, the weeks in theaters) are handled with plain, correctly worded text and hierarchy, never lettering or bursts, so the wall's chrome stays restrained and the covers carry the color.
 
 Real covers are the imagery. Color on the wall is earned: a cover only gets its color back when the film is watched, and the brand red and yellow are kept for the deadline, the next film, and progress.
 
@@ -315,7 +315,7 @@ Paper pill-card at the bottom center above the stat row, with a short message an
 - **Do** set every counting number in Archivo with tabular figures, squeezed on the `wdth` axis (62–70).
 - **Do** use 4px ink outlines, square corners and zero-blur ink shadows on anything that lives on the comic page.
 - **Do** stroke Bangers lettering in ink under the fill (2–3px, `paint-order: stroke fill`).
-- **Do** bring comic lettering and bursts onto the wall for real milestones (marathon finished, premiere day), and only then.
+- **Do** mark milestones on the wall (marathon finished, premiere day, in theaters) with correct, well-ranked text only: "Hoje", "dias em cartaz", "Maratona completa: 38 de 38". No lettering or bursts on the wall.
 - **Do** keep the focus ring visible: 3px yellow on the wall, 3px comic blue on the page.
 - **Do** respect `prefers-reduced-motion` and the lightweight phone mode in every new 3D or animated piece.
 
