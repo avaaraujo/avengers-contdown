@@ -9,7 +9,8 @@
     "lint": "eslint",
     "thumbs": "node scripts/make-thumbs.mjs",
     "brand": "node scripts/brand.mjs",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -27,6 +28,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "playwright-core": "^1.64.1",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   },
   "description": "Uma estante de gibis em 3D para maratonar o MCU em ordem cronológica até a estreia de Vingadores: Doutor Destino.",

@@ -11,6 +11,8 @@ import { Check, Close } from './Burst';
 import { LOCAL_KEY, useProgress } from './useProgress';
 import { AuthPanel } from './AuthPanel';
 import { trapTab } from './focus';
+import Link from 'next/link';
+import { INFO_PAGES, infoPath } from '@/lib/pages';
 
 type Phase = 'closed' | 'flying' | 'open' | 'closing';
 const subscribeClock = (tick: () => void) => { const t = setInterval(tick, 1000); return () => clearInterval(t); };
@@ -727,6 +729,9 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
         )}
         <p className="credit">
           Capas: Marvel Database. Streaming: JustWatch{catalog.tmdb ? ' via TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado por ele' : ''}.
+        </p>
+        <p className="credit info-links">
+          {INFO_PAGES.map((p, i) => <span key={p.slug}>{i > 0 && ' · '}<Link href={infoPath(p.slug)}>{p.slug === 'about' ? 'Sobre' : p.title}</Link></span>)}
         </p>
         </div>
       </nav>
