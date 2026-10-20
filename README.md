@@ -60,6 +60,7 @@ npm run dev                  # http://localhost:3000
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Banco e login. A chave publicável é segura no navegador; o acesso é limitado por RLS. |
 | `TMDB_API_KEY` | Opcional. Títulos e sinopses em português do Brasil e streaming atualizado todo dia, via [TMDB](https://www.themoviedb.org/). Sem ela valem os dados do banco. |
 | `NEXT_PUBLIC_SITE_URL` | Opcional. Origem pública para metadados e imagens de compartilhamento. |
+| `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_ADDRESS_LOCALITY`, `NEXT_PUBLIC_ADDRESS_REGION` | Opcionais. Contato e endereço públicos em `/contact` e no JSON-LD. Sem elas, nada disso é publicado. |
 
 ### Login por link mágico
 
@@ -72,7 +73,8 @@ No Supabase, em **Authentication → URL Configuration**, deixe o **Site URL** a
 - **Estante**: three.js imperativo em [`ShelfScene.ts`](src/components/shelf/ShelfScene.ts), controlado pelo React por uma API pequena.
 - **Progresso**: `localStorage` para visitantes e a tabela `avengers_watches` (RLS, só as próprias linhas) para quem entrou.
 - **Ingressos**: quando a venda abrir, ponha a URL em `avengers_config` (`premiere.tickets_url`, só `https://`) e o link aparece no HUD e na edição da estreia, sem deploy. A data da estreia sai do mesmo lugar.
-- **SEO**: `sitemap.xml`, `robots.txt`, JSON-LD (`Movie`/`TVSeries`) nas páginas de filme e de extra (`/extra/<slug>`).
+- **SEO**: `sitemap.xml`, `robots.txt`, canonical, JSON-LD (`WebSite`, `WebApplication` e `Organization` na home; `Movie`/`TVSeries` nas páginas de filme e de extra) e páginas `/about`, `/contact` e `/privacy`.
+- **Para agentes**: o HTML da home traz o texto e a lista dos filmes sem JavaScript. `/llms.txt` diz quando usar o site e onde está cada página. Qualquer página responde em Markdown a `Accept: text/markdown` (`src/proxy.ts` reescreve para `src/app/api/markdown`), e um caminho inexistente devolve 404 com corpo em Markdown.
 
 ## Estrutura
 
@@ -96,6 +98,8 @@ npm run thumbs        # gera public/covers/sm a partir das capas
 npm run brand         # ícone, favicon e card social (usa o Edge ou Chrome local)
 npm run build && npx next start -p 3100
 npm run screenshots -- http://localhost:3100   # atualiza docs/images
+npm test                                       # testes unitários (negociação, Markdown, llms.txt, JSON-LD)
+node scripts/verify-agent-readiness.mjs http://localhost:3100   # confere endpoints e arquivos para agentes
 ```
 
 ## Créditos e avisos
