@@ -118,6 +118,8 @@ button { font: inherit; color: inherit; }
 .bar .pct { font-weight: 800; font-size: 14px; font-variation-settings: "wdth" 80; min-width: 9ch; text-align: right; }
 .demo { color: var(--muted); font-size: 12px; margin-top: 8px; display: flex; gap: 10px; align-items: center; pointer-events: auto; }
 .demo button { background: none; border: 0; padding: 0; color: var(--paper); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 12px; }
+.demo .credit { margin-left: auto; flex-shrink: 0; color: var(--muted); opacity: .6; text-decoration: none; transition: opacity .2s, color .2s; }
+.demo .credit:hover, .demo .credit:focus-visible { opacity: 1; color: var(--paper); text-decoration: underline; text-underline-offset: 3px; }
 html.page-busy .hud-top, html.page-busy .hud-bottom { opacity: 0; pointer-events: none; }
 html.page-busy .hud-top > *, html.page-busy .stats, html.page-busy .bar, html.page-busy .demo { pointer-events: none; }
 

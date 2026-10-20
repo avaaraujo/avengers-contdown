@@ -598,6 +598,7 @@ export function CountdownApp({ catalog, initialN = null, initialExtra = null, sh
             : progress.user
               ? <span>Progresso salvo na sua conta.</span>
               : <span>Seu progresso fica salvo neste navegador. <button onClick={() => togglePanel('account')}>Entre</button> para levar para qualquer aparelho.</span>}
+          <a className="credit" href="https://avaaraujo.com" target="_blank" rel="noopener">Feito por Avá Araujo</a>
         </div>
       </footer>
 
